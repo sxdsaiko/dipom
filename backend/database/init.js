@@ -1,30 +1,32 @@
 const fs = require('fs');
 const path = require('path');
-const { Client } = require('pg');
+const mysql = require('mysql2/promise');
 
-async function init() {
-    const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.DATABASE_URL.includes('railway')
-            ? { rejectUnauthorized: false }
-            : false
-    });
+async function initDatabase() {
+    try {
+        const connection = await mysql.createConnection(process.env.DATABASE_URL);
 
-    await client.connect();
+        console.log('Connected to MySQL');
 
-    const schema = fs.readFileSync(
-        path.join(__dirname, 'schema.sql'),
-        'utf8'
-    );
+        const schemaPath = path.join(__dirname, 'schema.sql');
+        const schema = fs.readFileSync(schemaPath, 'utf8');
 
-    await client.query(schema);
+        const queries = schema
+            .split(';')
+            .map(q => q.trim())
+            .filter(q => q.length);
 
-    console.log('Database initialized');
+        for (const query of queries) {
+            await connection.query(query);
+        }
 
-    await client.end();
+        console.log('Database initialized successfully');
+
+        await connection.end();
+    } catch (error) {
+        console.error('DB init error:', error);
+        process.exit(1);
+    }
 }
 
-init().catch(err => {
-    console.error(err);
-    process.exit(1);
-});
+initDatabase();
