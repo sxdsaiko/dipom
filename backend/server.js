@@ -27,10 +27,18 @@ const corsOptions = {
   origin: (origin, callback) => {
     // В dev-режиме разрешаем всё: file://, любой localhost-порт, Live Server
     if (!origin || process.env.NODE_ENV !== 'production') return callback(null, true);
-    const allowed = (process.env.FRONTEND_URL || '').split(',').map(s => s.trim()).concat([
-      'http://localhost:3000','http://localhost:5500',
-      'http://127.0.0.1:5500','http://127.0.0.1:3000',
-    ]);
+    const allowed = (process.env.FRONTEND_URL || '')
+      .split(',')
+      .map(s => s.trim())
+      .concat([
+        'http://localhost:3000',
+        'http://localhost:5500',
+        'http://127.0.0.1:5500',
+        'http://127.0.0.1:3000',
+    
+        'https://dipom.vercel.app',
+        'https://dipom-9zkwjx7v6-sxdsaikos-projects.vercel.app',
+      ]);
     if (allowed.includes(origin)) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
   },
