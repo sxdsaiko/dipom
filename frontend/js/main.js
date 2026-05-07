@@ -4,9 +4,9 @@
 
 // Auto-detect API URL: если frontend открыт через Live Server (5500) или :3000,
 // backend всё равно на :5000 того же хоста
-const API = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:5000/api'
-  : `${window.location.protocol}//${window.location.hostname}:5000/api`;
+  : 'https://dipom-production.up.railway.app/api';
 
 // ── Auth helper ────────────────────────────────────
 const Auth = {
