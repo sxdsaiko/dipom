@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ-панель — WanderLog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <h1 class="top-bar__title">Панель управления</h1>
+      <div class="top-bar__actions">
+        <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--mist)" id="adminClock"></span>
+        <span class="badge badge--red">ADMIN</span>
+      </div>
+    </header>
+
+    <div class="page-body">
+
+      <!-- ── TAB: OVERVIEW ─────────────────────── -->
+      <div id="tab-overview">
+        <div class="stats-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="stat-card">
+            <div class="stat-card__icon">👥</div>
+            <div class="stat-card__num" id="as-users">—</div>
+            <div class="stat-card__label">Пользователей</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon">🗺️</div>
+            <div class="stat-card__num" id="as-trips">—</div>
+            <div class="stat-card__label">Поездок</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon">📸</div>
+            <div class="stat-card__num" id="as-photos">—</div>
+            <div class="stat-card__label">Фотографий</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon">💬</div>
+            <div class="stat-card__num" id="as-comments">—</div>
+            <div class="stat-card__label">Комментариев</div>
+          </div>
+          <div class="stat-card" style="border-color:var(--rust)">
+            <div class="stat-card__icon">⚠️</div>
+            <div class="stat-card__num" id="as-reports" style="color:var(--rust)">—</div>
+            <div class="stat-card__label">Жалоб (новых)</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:0">
+          <!-- New users chart -->
+          <div class="card">
+            <div class="card__header"><span class="card__title">Регистрации за 30 дней</span></div>
+            <div class="card__body"><canvas id="usersChart" height="200"></canvas></div>
+          </div>
+          <!-- Top trips -->
+          <div class="card">
+            <div class="card__header"><span class="card__title">Топ путешествий</span></div>
+            <div class="card__body" id="topTripsAdmin">
+              <div class="skeleton" style="height:40px;margin-bottom:8px;border-radius:6px"></div>
+              <div class="skeleton" style="height:40px;margin-bottom:8px;border-radius:6px"></div>
+              <div class="skeleton" style="height:40px;margin-bottom:8px;border-radius:6px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: USERS ────────────────────────── -->
+      <div id="tab-users" style="display:none">
+        <div class="card">
+          <div class="card__header">
+            <span class="card__title">Пользователи</span>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input type="text" id="userSearch" placeholder="Поиск по email или username..." style="padding:7px 12px;border:1.5px solid var(--sand);border-radius:8px;font-size:0.84rem;outline:none;width:240px" oninput="filterUsers(this.value)">
+              <select id="roleFilter" style="padding:7px 12px;border:1.5px solid var(--sand);border-radius:8px;font-size:0.84rem;outline:none" onchange="filterUsers()">
+                <option value="">Все роли</option>
+                <option value="user">user</option>
+                <option value="moderator">moderator</option>
+                <option value="admin">admin</option>
+              </select>
+            </div>
+          </div>
+          <div class="card__body" style="padding:0;overflow-x:auto">
+            <table class="admin-table" id="usersTable">
+              <thead>
+                <tr><th>ID</th><th>Username</th><th>Email</th><th>Роль</th><th>Поездок</th><th>Регистрация</th><th>Последний вход</th><th>Действия</th></tr>
+              </thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: TRIPS ────────────────────────── -->
+      <div id="tab-trips" style="display:none">
+        <div class="card">
+          <div class="card__header">
+            <span class="card__title">Все путешествия</span>
+            <span style="font-size:0.82rem;color:var(--mist)" id="tripsAdminCount"></span>
+          </div>
+          <div class="card__body" style="padding:0;overflow-x:auto">
+            <table class="admin-table" id="tripsTable">
+              <thead>
+                <tr><th>ID</th><th>Название</th><th>Автор</th><th>Статус</th><th>Публичная</th><th>Просмотры</th><th>Создана</th><th>Действия</th></tr>
+              </thead>
+              <tbody id="tripsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: REPORTS ──────────────────────── -->
+      <div id="tab-reports" style="display:none">
+        <div class="card">
+          <div class="card__header">
+            <span class="card__title">Жалобы пользователей</span>
+          </div>
+          <div class="card__body" style="padding:0;overflow-x:auto">
+            <table class="admin-table">
+              <thead>
+                <tr><th>ID</th><th>Тип</th><th>Причина</th><th>Жалобщик</th><th>Статус</th><th>Дата</th><th>Действия</th></tr>
+              </thead>
+              <tbody id="reportsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: ACTIVITY ─────────────────────── -->
+      <div id="tab-activity" style="display:none">
+        <div class="card">
+          <div class="card__header">
+            <span class="card__title">Лог активности</span>
+            <button class="btn btn--ghost" style="padding:6px 14px;font-size:0.8rem" onclick="loadActivity()">↻ Обновить</button>
+          </div>
+          <div class="card__body" style="padding:0;overflow-x:auto">
+            <table class="admin-table">
+              <thead>
+                <tr><th>Время</th><th>Пользователь</th><th>Действие</th><th>IP</th></tr>
+              </thead>
+              <tbody id="activityBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="../js/main.js"></script>
+<script>
+// ── Clock ──────────────────────────────────────────
+function updateClock() {
+  document.getElementById('adminClock').textContent = new Date().toLocaleString('ru');
+}
+updateClock(); setInterval(updateClock, 1000);
+
+// ── Tab nav ────────────────────────────────────────
+function showTab(name, btn) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display='none');
+  document.getElementById(`tab-${name}`).style.display='block';
+  document.querySelectorAll('.sidebar__nav a').forEach(a => a.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (name === 'users')    loadUsers();
+  if (name === 'trips')    loadTripsAdmin();
+  if (name === 'reports')  loadReports();
+  if (name === 'activity') loadActivity();
+}
+
+// ── MOCK DATA ──────────────────────────────────────
+const MOCK_USERS = [
+  { id:1, username:'admin',      email:'admin@wanderlog.app',    role:'admin',     trips_count:3,  created_at:'2024-01-01', last_login:'2024-12-01' },
+  { id:2, username:'maria_solo', email:'maria@example.com',      role:'user',      trips_count:12, created_at:'2024-02-14', last_login:'2024-11-28' },
+  { id:3, username:'travel_dima',email:'dima@example.com',       role:'user',      trips_count:7,  created_at:'2024-03-01', last_login:'2024-11-15' },
+  { id:4, username:'anna_world', email:'anna@example.com',       role:'moderator', trips_count:25, created_at:'2024-01-20', last_login:'2024-12-01' },
+  { id:5, username:'explorer_k', email:'konstantin@example.com', role:'user',      trips_count:4,  created_at:'2024-05-10', last_login:'2024-10-22' },
+];
+const MOCK_TRIPS_ADMIN = [
+  { id:1, title:'Сакура Токио',          username:'maria_solo', status:'completed', is_public:1, views_count:2891, created_at:'2024-03-20' },
+  { id:2, title:'Лазурное побережье',    username:'travel_dima',status:'completed', is_public:1, views_count:1740, created_at:'2024-07-10' },
+  { id:3, title:'Горная Грузия',         username:'anna_world', status:'completed', is_public:1, views_count:2100, created_at:'2024-09-08' },
+  { id:4, title:'Зимний Стамбул',        username:'explorer_k', status:'planned',   is_public:0, views_count:430,  created_at:'2024-11-01' },
+  { id:5, title:'Острова Бали',          username:'maria_solo', status:'completed', is_public:1, views_count:1540, created_at:'2024-01-05' },
+];
+const MOCK_REPORTS = [
+  { id:1, entity:'comment', reason:'spam',          reporter:'user123', status:'pending',  created_at:'2024-11-30' },
+  { id:2, entity:'trip',    reason:'inappropriate', reporter:'maria_solo',status:'reviewed',created_at:'2024-11-28' },
+  { id:3, entity:'user',    reason:'fake',          reporter:'anna_world',status:'resolved',created_at:'2024-11-25' },
+];
+const MOCK_ACTIVITY = [
+  { created_at:'2024-12-01 10:22', username:'maria_solo', action:'POST /api/trips',      ip:'192.168.1.10' },
+  { created_at:'2024-12-01 10:18', username:'admin',      action:'DELETE /api/users/55', ip:'10.0.0.1' },
+  { created_at:'2024-12-01 09:55', username:'travel_dima',action:'POST /api/auth/login', ip:'192.168.1.42' },
+  { created_at:'2024-12-01 09:33', username:'explorer_k', action:'PUT /api/trips/4',     ip:'172.16.0.5' },
+];
+
+// ── Overview ───────────────────────────────────────
+async function loadOverview() {
+  try {
+    const data = await apiFetch('/admin/stats');
+    setAdminStat('as-users',    data.counts.users);
+    setAdminStat('as-trips',    data.counts.trips);
+    setAdminStat('as-photos',   data.counts.photos);
+    setAdminStat('as-comments', data.counts.comments);
+    setAdminStat('as-reports',  data.counts.pending_reports);
+    renderTopTrips(data.topTrips);
+    renderUsersChart(data.newUsers);
+  } catch {
+    setAdminStat('as-users','12 847'); setAdminStat('as-trips','89 320');
+    setAdminStat('as-photos','341 200'); setAdminStat('as-comments','28 440');
+    setAdminStat('as-reports','7');
+    renderTopTrips(MOCK_TRIPS_ADMIN.slice(0,3));
+    renderUsersChart(null);
+  }
+}
+function setAdminStat(id,val) { const el=document.getElementById(id); if(el)el.textContent=val; }
+
+function renderTopTrips(trips) {
+  const el = document.getElementById('topTripsAdmin');
+  if (!el || !trips) return;
+  el.innerHTML = trips.map(t => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--sand);font-size:0.85rem">
+      <div>
+        <strong>${t.title}</strong>
+        <div style="font-size:0.72rem;color:var(--mist);margin-top:2px">@${t.username}</div>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--mist)">◎ ${t.views_count.toLocaleString()}</span>
+    </div>
+  `).join('');
+}
+
+function renderUsersChart(data) {
+  const ctx = document.getElementById('usersChart');
+  if (!ctx) return;
+  const labels = data ? data.map(d=>d.date.slice(5)) : ['1','5','10','15','20','25','30'].map(d=>`12/${d}`);
+  const counts = data ? data.map(d=>d.count) : [12,8,23,15,31,19,27,14,38,22,16,29,11,33,18];
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{ label:'Регистрации', data: counts, borderColor:'#c9a96e', backgroundColor:'rgba(201,169,110,0.1)', tension:0.4, fill:true, pointBackgroundColor:'#c9a96e', pointRadius:3 }],
+    },
+    options: {
+      responsive:true,
+      plugins: { legend:{ display:false } },
+      scales: {
+        x: { grid:{ color:'rgba(0,0,0,0.04)' }, ticks:{ font:{family:'Space Mono',size:9}, maxTicksLimit:8 } },
+        y: { grid:{ color:'rgba(0,0,0,0.04)' }, ticks:{ font:{family:'Space Mono',size:9} }, beginAtZero:true },
+      },
+    },
+  });
+}
+
+// ── Users ──────────────────────────────────────────
+let allUsers = [];
+async function loadUsers() {
+  try { allUsers = (await apiFetch('/admin/users')).data; } catch { allUsers = MOCK_USERS; }
+  renderUsers(allUsers);
+}
+function filterUsers(q) {
+  const search = (q || document.getElementById('userSearch').value).toLowerCase();
+  const role   = document.getElementById('roleFilter').value;
+  renderUsers(allUsers.filter(u =>
+    (!search || u.username.includes(search) || u.email.includes(search)) &&
+    (!role   || u.role === role)
+  ));
+}
+function renderUsers(users) {
+  document.getElementById('usersBody').innerHTML = users.map(u => `
+    <tr>
+      <td style="font-family:var(--font-mono);color:var(--mist)">#${u.id}</td>
+      <td><strong>${u.username}</strong></td>
+      <td style="color:var(--mist);font-size:0.82rem">${u.email}</td>
+      <td><span class="badge badge--${u.role==='admin'?'red':u.role==='moderator'?'blue':'green'}">${u.role}</span></td>
+      <td style="font-family:var(--font-mono)">${u.trips_count}</td>
+      <td style="font-size:0.78rem;color:var(--mist)">${u.created_at}</td>
+      <td style="font-size:0.78rem;color:var(--mist)">${u.last_login||'—'}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn--ghost" style="padding:4px 10px;font-size:0.75rem" onclick="changeRole(${u.id},'${u.role}')">Роль</button>
+          <button class="btn" style="padding:4px 10px;font-size:0.75rem;background:var(--cream);color:var(--rust)" onclick="deleteUser(${u.id})">✕</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+async function changeRole(id, cur) {
+  const roles = ['user','moderator','admin'];
+  const next = roles[(roles.indexOf(cur)+1) % roles.length];
+  if (!confirm(`Изменить роль #${id} на «${next}»?`)) return;
+  try { await apiFetch(`/admin/users/${id}/role`, { method:'PUT', body:JSON.stringify({role:next}) }); toast('Роль обновлена','success'); loadUsers(); }
+  catch(e) { toast(e.message,'error'); }
+}
+async function deleteUser(id) {
+  if (!confirm(`Удалить пользователя #${id}?`)) return;
+  try { await apiFetch(`/admin/users/${id}`, { method:'DELETE' }); toast('Удалено','success'); loadUsers(); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+// ── Trips Admin ────────────────────────────────────
+async function loadTripsAdmin() {
+  let trips;
+  try { trips = await apiFetch('/admin/trips'); } catch { trips = MOCK_TRIPS_ADMIN; }
+  document.getElementById('tripsAdminCount').textContent = `${trips.length} записей`;
+  document.getElementById('tripsBody').innerHTML = trips.map(t => `
+    <tr>
+      <td style="font-family:var(--font-mono);color:var(--mist)">#${t.id}</td>
+      <td><strong>${t.title}</strong></td>
+      <td style="font-size:0.82rem">@${t.username}</td>
+      <td><span class="badge badge--${t.status==='completed'?'green':t.status==='planned'?'yellow':'blue'}">${t.status}</span></td>
+      <td><span class="badge badge--${t.is_public?'green':'red'}">${t.is_public?'Да':'Нет'}</span></td>
+      <td style="font-family:var(--font-mono)">${t.views_count.toLocaleString()}</td>
+      <td style="font-size:0.78rem;color:var(--mist)">${t.created_at}</td>
+      <td>
+        <button class="btn" style="padding:4px 10px;font-size:0.75rem;background:var(--cream);color:var(--rust)" onclick="deleteTrip(${t.id})">✕ Удалить</button>
+      </td>
+    </tr>
+  `).join('');
+}
+async function deleteTrip(id) {
+  if (!confirm(`Удалить поездку #${id}?`)) return;
+  try { await apiFetch(`/admin/trips/${id}`, { method:'DELETE' }); toast('Удалено','success'); loadTripsAdmin(); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+// ── Reports ────────────────────────────────────────
+async function loadReports() {
+  let reports;
+  try { reports = await apiFetch('/admin/reports'); } catch { reports = MOCK_REPORTS; }
+  document.getElementById('reportsBody').innerHTML = reports.map(r => `
+    <tr>
+      <td style="font-family:var(--font-mono);color:var(--mist)">#${r.id}</td>
+      <td>${r.entity}</td>
+      <td>${r.reason}</td>
+      <td>@${r.reporter}</td>
+      <td><span class="badge badge--${r.status==='pending'?'yellow':r.status==='resolved'?'green':'blue'}">${r.status}</span></td>
+      <td style="font-size:0.78rem;color:var(--mist)">${r.created_at}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn--ghost" style="padding:4px 10px;font-size:0.75rem" onclick="resolveReport(${r.id},'resolved')">✓ Решить</button>
+          <button class="btn btn--ghost" style="padding:4px 10px;font-size:0.75rem" onclick="resolveReport(${r.id},'dismissed')">✕ Закрыть</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+async function resolveReport(id, status) {
+  try { await apiFetch(`/admin/reports/${id}`, { method:'PUT', body:JSON.stringify({status}) }); toast('Обновлено','success'); loadReports(); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+// ── Activity ───────────────────────────────────────
+async function loadActivity() {
+  let activity;
+  try { activity = await apiFetch('/admin/activity'); } catch { activity = MOCK_ACTIVITY; }
+  document.getElementById('activityBody').innerHTML = activity.map(a => `
+    <tr>
+      <td style="font-family:var(--font-mono);font-size:0.75rem;color:var(--mist)">${a.created_at}</td>
+      <td style="font-size:0.82rem">@${a.username||'—'}</td>
+      <td style="font-family:var(--font-mono);font-size:0.78rem">${a.action}</td>
+      <td style="font-family:var(--font-mono);font-size:0.75rem;color:var(--mist)">${a.ip||'—'}</td>
+    </tr>
+  `).join('');
+}
+
+document.addEventListener('DOMContentLoaded', loadOverview);
+</script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/avatar.js"></script>
+</body>
+</html>

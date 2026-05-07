@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Регистрация — WanderLog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="auth-split">
+  <div class="auth-split__visual">
+    <div class="auth-split__overlay"></div>
+    <img src="https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=900&q=80" alt="">
+    <div class="auth-split__visual-content">
+      <a href="../index.html" class="auth-logo"><span style="color:var(--gold)">◈</span> WanderLog</a>
+      <div>
+        <h2 style="color:var(--white);font-size:2.4rem;margin-bottom:16px">Начните вести<br><em>свой дневник</em></h2>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:12px">
+          <li style="color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:12px"><span style="color:var(--gold)">◈</span> Неограниченные путешествия</li>
+          <li style="color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:12px"><span style="color:var(--gold)">◈</span> Интерактивная карта стран</li>
+          <li style="color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:12px"><span style="color:var(--gold)">◈</span> Загрузка фотографий</li>
+          <li style="color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:12px"><span style="color:var(--gold)">◈</span> Учёт расходов и бюджета</li>
+          <li style="color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:12px"><span style="color:var(--gold)">◈</span> Достижения и badges</li>
+        </ul>
+      </div>
+      <div class="auth-stats">
+        <div><strong>Бесплатно</strong><span>навсегда</span></div>
+        <div><strong>3 мин</strong><span>на регистрацию</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-split__form">
+    <div class="form-wrap" style="max-width:440px">
+      <div class="form-logo">Создать <span>аккаунт</span></div>
+      <p class="form-sub">Бесплатно и без обязательств</p>
+
+      <div id="formAlert" class="form-alert" style="display:none"></div>
+
+      <!-- Progress indicator -->
+      <div class="reg-progress" id="regProgress">
+        <div class="reg-progress__step active" data-step="1">1</div>
+        <div class="reg-progress__line"></div>
+        <div class="reg-progress__step" data-step="2">2</div>
+        <div class="reg-progress__line"></div>
+        <div class="reg-progress__step" data-step="3">3</div>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="reg-step" id="step1">
+        <div class="field">
+          <label>Email *</label>
+          <input type="email" id="reg-email" placeholder="you@example.com">
+          <span class="field-error" id="emailErr"></span>
+        </div>
+        <div class="field">
+          <label>Username *</label>
+          <div style="position:relative">
+            <input type="text" id="reg-username" placeholder="ivan_travels" maxlength="30">
+            <span id="usernameCheck" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:0.8rem"></span>
+          </div>
+          <span class="field-error" id="usernameErr"></span>
+          <span style="font-size:0.72rem;color:var(--mist);margin-top:4px;display:block">Только a-z, 0-9, _ (3-30 символов)</span>
+        </div>
+        <button class="btn btn--primary form-submit" onclick="nextStep(1)">Продолжить →</button>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="reg-step" id="step2" style="display:none">
+        <div class="form-row">
+          <div class="field">
+            <label>Имя</label>
+            <input type="text" id="reg-firstname" placeholder="Иван">
+          </div>
+          <div class="field">
+            <label>Фамилия</label>
+            <input type="text" id="reg-lastname" placeholder="Петров">
+          </div>
+        </div>
+        <div class="field">
+          <label>Пароль *</label>
+          <div class="field-password">
+            <input type="password" id="reg-password" placeholder="Минимум 8 символов" oninput="checkPass(this.value)">
+            <button type="button" class="show-pass" onclick="togglePass('reg-password')">👁</button>
+          </div>
+          <div class="pass-strength" id="passStrength" style="display:none">
+            <div class="pass-strength__bar"><div class="pass-strength__fill" id="passStrengthFill"></div></div>
+            <span id="passStrengthLabel"></span>
+          </div>
+          <span class="field-error" id="passErr"></span>
+        </div>
+        <div class="field">
+          <label>Повторите пароль *</label>
+          <input type="password" id="reg-confirm" placeholder="••••••••">
+          <span class="field-error" id="confirmErr"></span>
+        </div>
+        <div style="display:flex;gap:12px">
+          <button class="btn btn--ghost" onclick="prevStep(2)" style="flex:0">← Назад</button>
+          <button class="btn btn--primary form-submit" style="flex:1" onclick="nextStep(2)">Продолжить →</button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="reg-step" id="step3" style="display:none">
+        <div style="text-align:center;padding:20px 0 32px">
+          <div style="font-size:3rem;margin-bottom:16px">🌍</div>
+          <h3 style="font-family:var(--font-serif);font-size:1.6rem;margin-bottom:8px">Почти готово!</h3>
+          <p style="color:var(--mist)">Ваш аккаунт будет создан. Вы можете сразу начать заполнять дневник.</p>
+        </div>
+        <div class="field">
+          <label class="checkbox-label" style="align-items:flex-start;gap:10px">
+            <input type="checkbox" id="reg-terms" style="margin-top:3px;flex-shrink:0">
+            <span style="font-size:0.85rem;color:var(--mist)">Я принимаю <a href="#" style="color:var(--gold)">условия использования</a> и <a href="#" style="color:var(--gold)">политику конфиденциальности</a></span>
+          </label>
+          <span class="field-error" id="termsErr"></span>
+        </div>
+        <div style="display:flex;gap:12px">
+          <button class="btn btn--ghost" onclick="prevStep(3)" style="flex:0">← Назад</button>
+          <button class="btn btn--primary form-submit" style="flex:1" id="submitBtn" onclick="doRegister()">
+            <span id="submitText">Создать аккаунт</span>
+            <span id="submitSpinner" class="spinner" style="display:none;width:18px;height:18px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:white"></span>
+          </button>
+        </div>
+      </div>
+
+      <p class="form-alt" style="margin-top:24px">Уже есть аккаунт? <a href="login.html">Войти →</a></p>
+    </div>
+  </div>
+</div>
+
+<style>
+/* reuse auth-split from login */
+.auth-split{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+.auth-split__visual{position:relative;overflow:hidden}
+.auth-split__visual img{width:100%;height:100%;object-fit:cover}
+.auth-split__overlay{position:absolute;inset:0;background:linear-gradient(160deg,rgba(44,58,71,0.88),rgba(13,13,13,0.75));z-index:1}
+.auth-split__visual-content{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:space-between;padding:48px}
+.auth-logo{font-family:var(--font-serif);font-size:1.6rem;color:var(--white);display:flex;align-items:center;gap:10px}
+.auth-stats{display:flex;gap:40px}
+.auth-stats div{display:flex;flex-direction:column;gap:4px}
+.auth-stats strong{font-family:var(--font-serif);font-size:2rem;color:var(--white)}
+.auth-stats span{font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em}
+.auth-split__form{display:flex;align-items:center;justify-content:center;background:var(--paper)}
+.form-alert{padding:12px 16px;border-radius:8px;font-size:0.87rem;margin-bottom:20px}
+.form-alert--error{background:#fdecea;color:var(--rust);border:1px solid #f5c4bf}
+.form-alert--success{background:#e8f5e4;color:var(--sage);border:1px solid #c3e6bb}
+.field-password{position:relative}
+.field-password input{padding-right:44px}
+.show-pass{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:1rem;opacity:0.5}
+
+/* Progress steps */
+.reg-progress{display:flex;align-items:center;gap:0;margin-bottom:32px}
+.reg-progress__step{width:32px;height:32px;border-radius:50%;border:2px solid var(--sand);display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-family:var(--font-mono);color:var(--mist);transition:all .3s;flex-shrink:0}
+.reg-progress__step.active{border-color:var(--gold);background:var(--gold);color:var(--white)}
+.reg-progress__step.done{border-color:var(--sage);background:var(--sage);color:var(--white)}
+.reg-progress__line{flex:1;height:2px;background:var(--sand)}
+
+/* Password strength */
+.pass-strength{margin-top:8px;display:flex;align-items:center;gap:10px}
+.pass-strength__bar{flex:1;height:4px;background:var(--sand);border-radius:2px;overflow:hidden}
+.pass-strength__fill{height:100%;border-radius:2px;transition:all .3s}
+
+.checkbox-label{display:flex;cursor:pointer}
+@media(max-width:768px){.auth-split{grid-template-columns:1fr}.auth-split__visual{display:none}}
+</style>
+
+<script src="../js/main.js"></script>
+<script>
+let currentStep = 1;
+
+function nextStep(from) {
+  clearErrors();
+  if (from === 1) {
+    const email = document.getElementById('reg-email').value.trim();
+    const uname = document.getElementById('reg-username').value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('emailErr','Введите корректный email'); return; }
+    if (!uname || uname.length < 3 || !/^[a-zA-Z0-9_]+$/.test(uname)) { showErr('usernameErr','Username: 3-30 символов, только a-z 0-9 _'); return; }
+  }
+  if (from === 2) {
+    const pass = document.getElementById('reg-password').value;
+    const conf = document.getElementById('reg-confirm').value;
+    if (pass.length < 8) { showErr('passErr','Пароль минимум 8 символов'); return; }
+    if (!/[A-Z]/.test(pass)) { showErr('passErr','Нужна хотя бы одна заглавная буква'); return; }
+    if (!/[0-9]/.test(pass)) { showErr('passErr','Нужна хотя бы одна цифра'); return; }
+    if (pass !== conf) { showErr('confirmErr','Пароли не совпадают'); return; }
+  }
+  document.getElementById(`step${from}`).style.display = 'none';
+  document.querySelector(`[data-step="${from}"]`).classList.replace('active','done');
+  currentStep = from + 1;
+  document.getElementById(`step${currentStep}`).style.display = 'block';
+  document.querySelector(`[data-step="${currentStep}"]`).classList.add('active');
+}
+
+function prevStep(from) {
+  document.getElementById(`step${from}`).style.display = 'none';
+  const prev = from - 1;
+  document.getElementById(`step${prev}`).style.display = 'block';
+  document.querySelector(`[data-step="${from}"]`).classList.remove('active');
+  document.querySelector(`[data-step="${prev}"]`).classList.replace('done','active');
+}
+
+function checkPass(val) {
+  const el = document.getElementById('passStrength');
+  const fill = document.getElementById('passStrengthFill');
+  const label = document.getElementById('passStrengthLabel');
+  if (!val) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  let score = 0;
+  if (val.length >= 8) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^a-zA-Z0-9]/.test(val)) score++;
+  if (val.length >= 12) score++;
+  const configs = [
+    {w:'20%',c:'var(--rust)',t:'Слабый'},
+    {w:'40%',c:'#e08040',t:'Слабый'},
+    {w:'60%',c:'#c9a96e',t:'Средний'},
+    {w:'80%',c:'#5a8a50',t:'Хороший'},
+    {w:'100%',c:'var(--sage)',t:'Отличный'},
+  ];
+  const cfg = configs[Math.min(score-1,4)] || configs[0];
+  fill.style.width = cfg.w; fill.style.background = cfg.c;
+  label.textContent = cfg.t; label.style.color = cfg.c; label.style.fontSize = '0.72rem';
+}
+
+function togglePass(id) { const i = document.getElementById(id); i.type = i.type==='password'?'text':'password'; }
+function showErr(id,msg) { const el = document.getElementById(id); if(el) el.textContent=msg; }
+function clearErrors() { document.querySelectorAll('.field-error').forEach(e=>e.textContent=''); }
+function showAlert(msg,type) { const el=document.getElementById('formAlert'); el.textContent=msg; el.className=`form-alert form-alert--${type}`; el.style.display='block'; }
+
+async function doRegister() {
+  if (!document.getElementById('reg-terms').checked) { showErr('termsErr','Примите условия использования'); return; }
+  const btn = document.getElementById('submitBtn');
+  const spinner = document.getElementById('submitSpinner');
+  const text = document.getElementById('submitText');
+  btn.disabled = true; spinner.style.display='block'; text.style.opacity='0.5';
+
+  try {
+    const data = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        email:      document.getElementById('reg-email').value.trim(),
+        username:   document.getElementById('reg-username').value.trim(),
+        password:   document.getElementById('reg-password').value,
+        first_name: document.getElementById('reg-firstname').value.trim(),
+        last_name:  document.getElementById('reg-lastname').value.trim(),
+      }),
+    });
+    Auth.setToken(data.accessToken);
+    Auth.setUser(data.user);
+    showAlert('Аккаунт создан! Добро пожаловать в WanderLog 🎉', 'success');
+    setTimeout(() => { window.location = 'dashboard.html'; }, 1200);
+  } catch(err) {
+    showAlert(err.message || 'Ошибка регистрации', 'error');
+    btn.disabled=false; spinner.style.display='none'; text.style.opacity='1';
+  }
+}
+</script>
+<script src="../js/sidebar.js"></script>
+</body>
+</html>

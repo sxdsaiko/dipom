@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Войти — WanderLog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="auth-split">
+  <!-- Left visual panel -->
+  <div class="auth-split__visual">
+    <div class="auth-split__overlay"></div>
+    <img src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=900&q=80" alt="">
+    <div class="auth-split__visual-content">
+      <a href="../index.html" class="auth-logo">
+        <span style="color:var(--gold)">◈</span> WanderLog
+      </a>
+      <blockquote class="auth-quote">
+        «Путешествие в тысячу миль начинается с первого шага»
+        <cite>— Лао-цзы</cite>
+      </blockquote>
+      <div class="auth-stats">
+        <div><strong>12 847</strong><span>путешественников</span></div>
+        <div><strong>142</strong><span>страны</span></div>
+        <div><strong>89 320</strong><span>историй</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right form -->
+  <div class="auth-split__form">
+    <div class="form-wrap" style="max-width:420px">
+      <div class="form-logo">Войти в <span>WanderLog</span></div>
+      <p class="form-sub">Продолжите свой дневник путешествий</p>
+
+      <div id="formAlert" class="form-alert" style="display:none"></div>
+
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+        <span class="field-error" id="emailErr"></span>
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <div class="field-password">
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="show-pass" id="togglePass" title="Показать пароль">👁</button>
+        </div>
+        <span class="field-error" id="passErr"></span>
+      </div>
+
+      <div class="field-row-between">
+        <label class="checkbox-label">
+          <input type="checkbox" id="rememberMe"> Запомнить меня
+        </label>
+        <a href="forgot.html" class="form-link">Забыли пароль?</a>
+      </div>
+
+      <button class="btn btn--primary form-submit" id="loginBtn" onclick="doLogin()">
+        <span id="loginBtnText">Войти</span>
+        <span id="loginSpinner" class="spinner" style="display:none;width:18px;height:18px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:white"></span>
+      </button>
+
+      <div class="form-divider"><span>или</span></div>
+
+      <p class="form-alt">Нет аккаунта? <a href="register.html">Зарегистрироваться бесплатно →</a></p>
+    </div>
+  </div>
+</div>
+
+<style>
+.auth-split { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; }
+.auth-split__visual { position:relative; overflow:hidden; }
+.auth-split__visual img { width:100%; height:100%; object-fit:cover; }
+.auth-split__overlay { position:absolute;inset:0;background:linear-gradient(160deg,rgba(13,13,13,0.7),rgba(44,58,71,0.85));z-index:1; }
+.auth-split__visual-content { position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:space-between;padding:48px; }
+.auth-logo { font-family:var(--font-serif);font-size:1.6rem;color:var(--white);display:flex;align-items:center;gap:10px; }
+.auth-quote { color:rgba(255,255,255,0.8);font-family:var(--font-serif);font-size:1.5rem;font-style:italic;line-height:1.5;max-width:320px; }
+.auth-quote cite { display:block;font-size:0.85rem;font-style:normal;color:var(--gold-lt);margin-top:12px;font-family:var(--font-mono); }
+.auth-stats { display:flex;gap:40px; }
+.auth-stats div { display:flex;flex-direction:column;gap:4px; }
+.auth-stats strong { font-family:var(--font-serif);font-size:2rem;color:var(--white); }
+.auth-stats span { font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em; }
+.auth-split__form { display:flex;align-items:center;background:var(--paper); }
+.form-alert { padding:12px 16px;border-radius:8px;font-size:0.87rem;margin-bottom:20px; }
+.form-alert--error { background:#fdecea;color:var(--rust);border:1px solid #f5c4bf; }
+.form-alert--success { background:#e8f5e4;color:var(--sage);border:1px solid #c3e6bb; }
+.field-password { position:relative; }
+.field-password input { padding-right:44px; }
+.show-pass { position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:1rem;opacity:0.5;transition:opacity .2s; }
+.show-pass:hover { opacity:1; }
+.field-row-between { display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;font-size:0.85rem; }
+.checkbox-label { display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--mist); }
+.form-link { color:var(--gold);font-size:0.85rem; }
+.form-divider { text-align:center;margin:20px 0;position:relative; }
+.form-divider::before { content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--sand); }
+.form-divider span { background:var(--paper);padding:0 16px;position:relative;z-index:1;font-size:0.82rem;color:var(--mist); }
+@media(max-width:768px){.auth-split{grid-template-columns:1fr}.auth-split__visual{display:none}}
+</style>
+
+<script src="../js/main.js"></script>
+<script>
+async function doLogin() {
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn      = document.getElementById('loginBtn');
+  const spinner  = document.getElementById('loginSpinner');
+  const text     = document.getElementById('loginBtnText');
+
+  clearErrors();
+  if (!email)    { showErr('emailErr', 'Введите email'); return; }
+  if (!password) { showErr('passErr', 'Введите пароль'); return; }
+
+  btn.disabled = true; spinner.style.display = 'block'; text.style.opacity = '0.5';
+
+  try {
+    const data = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    Auth.setToken(data.accessToken);
+    Auth.setUser(data.user);
+    if (data.user?.role === 'admin' || data.user?.role === 'moderator') {
+      window.location = 'admin.html';
+    } else {
+      window.location = 'dashboard.html';
+    }
+  } catch(err) {
+    showAlert(err.message || 'Ошибка входа', 'error');
+    btn.disabled = false; spinner.style.display = 'none'; text.style.opacity = '1';
+  }
+}
+
+function showErr(id, msg) { const el = document.getElementById(id); if(el) el.textContent = msg; }
+function clearErrors() { document.querySelectorAll('.field-error').forEach(e => e.textContent = ''); }
+function showAlert(msg, type) {
+  const el = document.getElementById('formAlert');
+  el.textContent = msg; el.className = `form-alert form-alert--${type}`; el.style.display = 'block';
+}
+
+document.getElementById('togglePass').addEventListener('click', () => {
+  const inp = document.getElementById('password');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+});
+
+// Enter key
+document.addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+</script>
+<script src="../js/sidebar.js"></script>
+</body>
+</html>

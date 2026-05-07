@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мои путешествия — WanderLog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div style="display:flex;align-items:center;gap:16px">
+        <h1 class="top-bar__title">Мои путешествия</h1>
+        <span class="badge badge--blue" id="totalCount" style="font-size:0.72rem">...</span>
+      </div>
+      <div class="top-bar__actions">
+        <a href="trip-new.html" class="btn btn--primary" style="padding:10px 22px;font-size:0.85rem">+ Новая поездка</a>
+      </div>
+    </header>
+
+    <div class="page-body">
+
+      <!-- Filters & Search -->
+      <div class="trips-controls">
+        <div class="trips-search">
+          <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--mist);fill:none;stroke-width:2;flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="searchInput" placeholder="Поиск по названию или стране..." oninput="filterTrips()">
+        </div>
+        <div class="trips-filter-tabs">
+          <button class="ftab active" data-status="" onclick="setStatusFilter('',this)">Все</button>
+          <button class="ftab" data-status="completed" onclick="setStatusFilter('completed',this)">✅ Завершённые</button>
+          <button class="ftab" data-status="planned" onclick="setStatusFilter('planned',this)">📅 Планируемые</button>
+          <button class="ftab" data-status="ongoing" onclick="setStatusFilter('ongoing',this)">🧳 В процессе</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <select id="sortSelect" onchange="filterTrips()" style="padding:8px 12px;border:1.5px solid var(--sand);border-radius:8px;font-family:var(--font-sans);font-size:0.83rem;outline:none;background:var(--white)">
+            <option value="newest">Новые сначала</option>
+            <option value="oldest">Старые сначала</option>
+            <option value="rating">По рейтингу</option>
+            <option value="title">По названию</option>
+          </select>
+          <div class="view-toggle">
+            <button class="vt-btn active" onclick="setView('grid',this)" title="Сетка">⊞</button>
+            <button class="vt-btn" onclick="setView('list',this)" title="Список">☰</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trips container -->
+      <div id="tripsContainer"></div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Confirm delete modal -->
+<div class="modal-overlay" id="deleteModal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="modal__header"><h3>Удалить путешествие?</h3></div>
+    <div class="modal__body">
+      <p style="color:var(--mist)">Вы удаляете: <strong id="deleteTripName"></strong></p>
+      <p style="color:var(--rust);font-size:0.85rem;margin-top:10px">⚠️ Это действие нельзя отменить. Все фото, расходы и дни будут удалены.</p>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeDeleteModal()">Отмена</button>
+      <button class="btn" style="background:var(--rust);color:white;padding:11px 22px;border-radius:100px" onclick="confirmDelete()">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.trips-controls { display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap; align-items:center; }
+.trips-search { flex:1; min-width:220px; display:flex; align-items:center; gap:8px; border:1.5px solid var(--sand); border-radius:10px; padding:9px 14px; background:var(--white); }
+.trips-search:focus-within { border-color:var(--gold); }
+.trips-search input { flex:1; border:none; outline:none; font-family:var(--font-sans); font-size:0.88rem; background:transparent; }
+.trips-filter-tabs { display:flex; gap:4px; background:var(--cream); border-radius:10px; padding:3px; }
+.ftab { padding:7px 14px; border-radius:8px; font-size:0.82rem; color:var(--mist); transition:all .2s; white-space:nowrap; }
+.ftab.active { background:var(--white); color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,0.08); font-weight:500; }
+.view-toggle { display:flex; gap:3px; background:var(--cream); border-radius:8px; padding:3px; }
+.vt-btn { padding:5px 9px; border-radius:6px; font-size:1rem; color:var(--mist); transition:all .2s; }
+.vt-btn.active { background:var(--white); color:var(--ink); }
+
+/* Grid view */
+.trips-grid-view { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
+
+/* List view */
+.trips-list-view { display:flex; flex-direction:column; gap:12px; }
+.trip-list-item {
+  background:var(--white); border:1px solid var(--sand); border-radius:var(--radius-md);
+  display:grid; grid-template-columns:120px 1fr auto;
+  overflow:hidden; transition:transform .3s var(--ease-expo), box-shadow .3s; cursor:pointer;
+}
+.trip-list-item:hover { transform:translateX(4px); box-shadow:0 4px 20px rgba(0,0,0,0.07); }
+.trip-list-item__img { height:90px; overflow:hidden; }
+.trip-list-item__img img { width:100%; height:100%; object-fit:cover; }
+.trip-list-item__body { padding:14px 18px; display:flex; flex-direction:column; justify-content:center; gap:5px; }
+.trip-list-item__title { font-family:var(--font-serif); font-size:1.05rem; }
+.trip-list-item__meta { font-size:0.76rem; color:var(--mist); font-family:var(--font-mono); }
+.trip-list-item__actions { padding:14px; display:flex; flex-direction:column; justify-content:center; gap:6px; }
+
+/* Trip card actions */
+.trip-card-actions { position:absolute; top:10px; right:10px; display:flex; gap:6px; opacity:0; transition:opacity .2s; }
+.trip-card:hover .trip-card-actions { opacity:1; }
+.trip-card-action-btn {
+  width:30px; height:30px; border-radius:50%;
+  background:rgba(255,255,255,0.9); backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.78rem; transition:all .2s; border:1px solid rgba(255,255,255,0.5);
+}
+.trip-card-action-btn:hover { background:var(--white); transform:scale(1.1); }
+.trip-card-action-btn--delete:hover { background:var(--rust); color:white; }
+
+/* Empty state */
+.empty-state { text-align:center; padding:80px 20px; color:var(--mist); }
+.empty-state-icon { font-size:4rem; margin-bottom:16px; }
+
+/* Skeleton card */
+.skeleton-card { background:var(--white); border-radius:var(--radius-md); border:1px solid var(--sand); overflow:hidden; }
+
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:8000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.modal { background:var(--white); border-radius:var(--radius-lg); width:100%; padding:0; box-shadow:0 24px 80px rgba(0,0,0,0.2); }
+.modal__header { padding:24px 28px 0; }
+.modal__header h3 { font-family:var(--font-serif); font-size:1.4rem; }
+.modal__body { padding:16px 28px; }
+.modal__footer { padding:16px 28px 24px; display:flex; gap:10px; justify-content:flex-end; border-top:1px solid var(--sand); margin-top:16px; }
+</style>
+
+<script src="../js/validate.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/avatar.js"></script>
+<script>
+// ── State ──────────────────────────────────────────
+let allTrips   = [];
+let activeStatus = '';
+let viewMode   = 'grid';
+let deletingId = null;
+
+// ── Guard ──────────────────────────────────────────
+if (!Auth.getToken()) window.location.href = 'login.html';
+
+// ── User sidebar ───────────────────────────────────
+async function loadSidebarUser() {
+  try {
+    const u = await apiFetch('/auth/me');
+    const el = document.getElementById('userName');
+    if (el) el.textContent = u.first_name || u.username;
+    const av = document.getElementById('userAvatar');
+    if (av && u.avatar_url) av.src = u.avatar_url;
+  } catch {}
+}
+
+// ── Load all trips ─────────────────────────────────
+async function loadTrips() {
+  showLoading();
+  try {
+    allTrips = await apiFetch('/trips/my');
+    document.getElementById('totalCount').textContent = allTrips.length + ' поездок';
+    filterTrips();
+  } catch(err) {
+    document.getElementById('tripsContainer').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">⚠️</div>
+        <p>Не удалось загрузить поездки</p>
+        <p style="font-size:0.82rem;margin-top:6px">${err.message || ''}</p>
+        <button onclick="loadTrips()" class="btn btn--primary" style="margin-top:20px">↻ Повторить</button>
+      </div>`;
+  }
+}
+
+function showLoading() {
+  const skels = Array(6).fill(0).map(() => `
+    <div class="skeleton-card">
+      <div class="skeleton" style="height:180px;border-radius:0"></div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:8px">
+        <div class="skeleton" style="height:18px;width:70%;border-radius:4px"></div>
+        <div class="skeleton" style="height:13px;width:45%;border-radius:4px"></div>
+        <div class="skeleton" style="height:13px;width:55%;border-radius:4px"></div>
+      </div>
+    </div>`).join('');
+  document.getElementById('tripsContainer').innerHTML = `<div class="trips-grid-view">${skels}</div>`;
+}
+
+// ── Filter & sort ──────────────────────────────────
+function setStatusFilter(status, btn) {
+  activeStatus = status;
+  document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterTrips();
+}
+
+function filterTrips() {
+  const q    = document.getElementById('searchInput').value.toLowerCase().trim();
+  const sort = document.getElementById('sortSelect').value;
+
+  let result = allTrips.filter(t => {
+    const matchStatus = !activeStatus || t.status === activeStatus;
+    const matchSearch = !q || t.title.toLowerCase().includes(q) || (t.country_name||'').toLowerCase().includes(q);
+    return matchStatus && matchSearch;
+  });
+
+  if (sort === 'newest')  result.sort((a,b) => b.id - a.id);
+  if (sort === 'oldest')  result.sort((a,b) => a.id - b.id);
+  if (sort === 'rating')  result.sort((a,b) => (b.rating||0) - (a.rating||0));
+  if (sort === 'title')   result.sort((a,b) => a.title.localeCompare(b.title, 'ru'));
+
+  renderTrips(result);
+}
+
+// ── Render ─────────────────────────────────────────
+function renderTrips(trips) {
+  const container = document.getElementById('tripsContainer');
+
+  if (!trips.length) {
+    const isEmpty = !activeStatus && !document.getElementById('searchInput').value;
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">${isEmpty ? '🗺️' : '🔍'}</div>
+        <h3 style="font-family:var(--font-serif);font-size:1.5rem;margin-bottom:10px;color:var(--ink)">
+          ${isEmpty ? 'Нет путешествий' : 'Ничего не найдено'}
+        </h3>
+        <p>${isEmpty ? 'Создайте своё первое путешествие!' : 'Попробуйте изменить фильтры'}</p>
+        ${isEmpty ? `<a href="trip-new.html" class="btn btn--primary" style="margin-top:24px">+ Создать поездку</a>` : ''}
+      </div>`;
+    return;
+  }
+
+  if (viewMode === 'list') {
+    container.innerHTML = `<div class="trips-list-view">${trips.map(renderListItem).join('')}</div>`;
+  } else {
+    container.innerHTML = `<div class="trips-grid-view">${trips.map(renderCard).join('')}</div>`;
+  }
+}
+
+const STATUS_LABEL = { completed:'Завершено', planned:'Планируется', ongoing:'В процессе' };
+const STATUS_BADGE = { completed:'green', planned:'yellow', ongoing:'blue' };
+
+function renderCard(t) {
+  const stars = t.rating ? '★'.repeat(t.rating) + '☆'.repeat(5 - t.rating) : '';
+  const cover = t.cover_url || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80';
+  const dateStr = [t.start_date, t.end_date].filter(Boolean).map(d => new Date(d).toLocaleDateString('ru',{day:'numeric',month:'short'})).join(' → ');
+  return `
+    <div class="trip-card" style="position:relative" onclick="location.href='trip.html?id=${t.id}'">
+      <div class="trip-card__img">
+        <img src="${cover}" alt="${t.title}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80'">
+        <span class="trip-card__status trip-card__status--${t.status}">${STATUS_LABEL[t.status]||t.status}</span>
+        <div class="trip-card-actions" onclick="event.stopPropagation()">
+          <button class="trip-card-action-btn" onclick="location.href='trip-edit.html?id=${t.id}'" title="Редактировать">✏️</button>
+          <button class="trip-card-action-btn trip-card-action-btn--delete" onclick="openDeleteModal(${t.id},'${t.title.replace(/'/g,"\\'")}',event)" title="Удалить">✕</button>
+        </div>
+      </div>
+      <div class="trip-card__body">
+        <div class="trip-card__meta">
+          <span class="trip-card__country">${t.flag_emoji||''} ${t.country_name||'—'}</span>
+          <span class="trip-card__rating" style="color:var(--gold);font-size:0.8rem">${stars}</span>
+        </div>
+        <h3 class="trip-card__title">${t.title}</h3>
+        <div class="trip-card__dates">${dateStr || 'Даты не указаны'}</div>
+        <div class="trip-card__footer">
+          <div style="display:flex;gap:10px;font-size:0.75rem;color:var(--mist);font-family:var(--font-mono)">
+            ${t.photo_count > 0 ? `<span>📸 ${t.photo_count}</span>` : ''}
+            ${t.spent > 0 ? `<span>💰 ${Math.round(t.spent).toLocaleString('ru')} ₽</span>` : ''}
+          </div>
+          <span class="badge badge--${STATUS_BADGE[t.status]||'blue'}" style="font-size:0.65rem">${STATUS_LABEL[t.status]||t.status}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderListItem(t) {
+  const cover  = t.cover_url || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=300&q=80';
+  const dateStr = t.start_date ? new Date(t.start_date).toLocaleDateString('ru',{day:'numeric',month:'long',year:'numeric'}) : 'Дата не указана';
+  return `
+    <div class="trip-list-item" onclick="location.href='trip.html?id=${t.id}'">
+      <div class="trip-list-item__img">
+        <img src="${cover}" alt="${t.title}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=300&q=80'">
+      </div>
+      <div class="trip-list-item__body">
+        <div class="trip-list-item__title">${t.flag_emoji||''} ${t.title}</div>
+        <div class="trip-list-item__meta">
+          ${t.country_name||'—'} · ${dateStr}
+          ${t.photo_count > 0 ? ' · 📸 '+t.photo_count : ''}
+          ${t.spent > 0 ? ' · 💰 '+Math.round(t.spent).toLocaleString('ru')+' ₽' : ''}
+        </div>
+      </div>
+      <div class="trip-list-item__actions" onclick="event.stopPropagation()">
+        <span class="badge badge--${STATUS_BADGE[t.status]||'blue'}">${STATUS_LABEL[t.status]||t.status}</span>
+        <button class="btn btn--ghost" style="padding:5px 12px;font-size:0.75rem" onclick="location.href='trip.html?id=${t.id}'">Открыть →</button>
+        <button class="btn" style="padding:5px 12px;font-size:0.75rem;background:var(--cream);color:var(--rust)" onclick="openDeleteModal(${t.id},'${t.title.replace(/'/g,"\\'")}',event)">Удалить</button>
+      </div>
+    </div>`;
+}
+
+// ── View mode ──────────────────────────────────────
+function setView(mode, btn) {
+  viewMode = mode;
+  document.querySelectorAll('.vt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterTrips();
+}
+
+// ── Delete ─────────────────────────────────────────
+function openDeleteModal(id, name, event) {
+  event?.stopPropagation();
+  deletingId = id;
+  document.getElementById('deleteTripName').textContent = name;
+  document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+  deletingId = null;
+  document.getElementById('deleteModal').style.display = 'none';
+}
+
+async function confirmDelete() {
+  if (!deletingId) return;
+  try {
+    await apiFetch(`/trips/${deletingId}`, { method: 'DELETE' });
+    allTrips = allTrips.filter(t => t.id !== deletingId);
+    document.getElementById('totalCount').textContent = allTrips.length + ' поездок';
+    closeDeleteModal();
+    filterTrips();
+    toast('Путешествие удалено', 'success');
+  } catch(err) {
+    toast(err.message || 'Ошибка удаления', 'error');
+  }
+}
+
+// ── Init ───────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (typeof initPage === 'function') await initPage('trips');
+  loadTrips();
+});
+</script>
+</body>
+</html>

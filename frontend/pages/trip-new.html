@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Новое путешествие — WanderLog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <a href="trips.html" style="color:var(--mist);font-size:0.85rem">← Поездки</a>
+        <span style="color:var(--sand)">/</span>
+        <h1 class="top-bar__title" id="pageTitle">Новое путешествие</h1>
+      </div>
+      <div class="top-bar__actions">
+        <button class="btn btn--ghost" onclick="submitTrip(true)">Черновик</button>
+        <button class="btn btn--primary" onclick="submitTrip(false)">Сохранить</button>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <div id="formAlert" class="form-alert" style="display:none;margin-bottom:20px"></div>
+
+      <div class="trip-form-layout">
+        <!-- LEFT: main -->
+        <div>
+
+          <!-- Cover -->
+          <div class="form-section" style="padding:0;overflow:hidden;margin-bottom:20px">
+            <div class="cover-drop" id="coverDrop" onclick="document.getElementById('coverFile').click()">
+              <div class="cover-drop__hint" id="coverHint">
+                <span style="font-size:2.5rem">🖼️</span>
+                <p>Нажмите или перетащите фото обложки</p>
+                <span style="font-size:0.75rem;color:var(--mist)">JPEG, PNG, WebP · до 10 MB</span>
+              </div>
+              <img id="coverPreview" style="display:none;width:100%;height:100%;object-fit:cover">
+              <input type="file" id="coverFile" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="previewCover(this)">
+              <button id="removeCover" onclick="event.stopPropagation();removeCoverFn()" style="display:none;position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);color:#fff;border-radius:50%;width:30px;height:30px;font-size:0.9rem">✕</button>
+            </div>
+          </div>
+
+          <!-- Basic info -->
+          <div class="form-section">
+            <div class="form-section__title">Основная информация</div>
+            <div class="field">
+              <label>Название <span style="color:var(--rust)">*</span> <span class="flimit" id="titleLim">0/255</span></label>
+              <input type="text" id="f-title" placeholder="Весенний Токио, Лазурное побережье..." maxlength="255"
+                     oninput="liveCount(this,'titleLim',255)">
+              <span class="field-error" id="titleErr"></span>
+            </div>
+            <div class="field">
+              <label>Описание <span class="flimit" id="descLim">0/5000</span></label>
+              <textarea id="f-desc" placeholder="Расскажите о поездке: что планировали, что ожидали, что увидели..." maxlength="5000" rows="4"
+                        oninput="liveCount(this,'descLim',5000)"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label>Страна</label>
+                <select id="f-country"><option value="">— Выберите —</option></select>
+              </div>
+              <div class="field">
+                <label>Город <span class="flimit" id="cityLim">0/100</span></label>
+                <input type="text" id="f-city" placeholder="Токио, Осака..." maxlength="100"
+                       oninput="liveCount(this,'cityLim',100)">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label>Дата начала</label>
+                <input type="date" id="f-start" min="1920-01-01" max="2099-12-31">
+              </div>
+              <div class="field">
+                <label>Дата окончания</label>
+                <input type="date" id="f-end" min="1920-01-01" max="2099-12-31">
+              </div>
+            </div>
+          </div>
+
+          <!-- Status & mood -->
+          <div class="form-section">
+            <div class="form-section__title">Статус и оценка</div>
+            <div class="form-row">
+              <div class="field">
+                <label>Статус</label>
+                <select id="f-status">
+                  <option value="planned">✈️ Запланировано</option>
+                  <option value="ongoing">🧳 В процессе</option>
+                  <option value="completed">✅ Завершено</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Настроение</label>
+                <select id="f-mood">
+                  <option value="">— Не указано —</option>
+                  <option value="amazing">🤩 Невероятно!</option>
+                  <option value="good">😊 Хорошо</option>
+                  <option value="okay">😐 Нормально</option>
+                  <option value="tough">😓 Сложновато</option>
+                  <option value="terrible">😞 Ужасно</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Рейтинг</label>
+              <div class="star-row" id="starRow">
+                <span data-v="1" onclick="setRating(1)">★</span>
+                <span data-v="2" onclick="setRating(2)">★</span>
+                <span data-v="3" onclick="setRating(3)">★</span>
+                <span data-v="4" onclick="setRating(4)">★</span>
+                <span data-v="5" onclick="setRating(5)">★</span>
+                <button onclick="setRating(0)" style="font-size:0.75rem;color:var(--mist);margin-left:8px">сбросить</button>
+              </div>
+              <input type="hidden" id="f-rating" value="">
+            </div>
+          </div>
+
+          <!-- Budget -->
+          <div class="form-section">
+            <div class="form-section__title">Бюджет</div>
+            <div class="form-row">
+              <div class="field">
+                <label>Сумма (до 999 999 999)</label>
+                <input type="number" id="f-budget" placeholder="0" min="0" max="999999999" step="1"
+                       oninput="clampNum(this,0,999999999)">
+              </div>
+              <div class="field">
+                <label>Валюта</label>
+                <select id="f-currency">
+                  <option value="RUB">₽ Рубль</option>
+                  <option value="USD">$ Доллар</option>
+                  <option value="EUR">€ Евро</option>
+                  <option value="GBP">£ Фунт</option>
+                  <option value="TRY">₺ Лира</option>
+                  <option value="THB">฿ Бат</option>
+                  <option value="JPY">¥ Иена</option>
+                  <option value="GEL">₾ Лари</option>
+                  <option value="AED">د.إ Дирхам</option>
+                  <option value="CNY">¥ Юань</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Days diary -->
+          <div class="form-section" id="daysSection">
+            <div class="form-section__title" style="display:flex;justify-content:space-between;align-items:center">
+              <span>Дневник по дням</span>
+              <button class="btn btn--ghost" style="padding:6px 14px;font-size:0.8rem" onclick="addDayCard()">+ День</button>
+            </div>
+            <div id="daysContainer">
+              <div id="daysEmpty" style="text-align:center;padding:28px;color:var(--mist)">
+                <div style="font-size:2rem;margin-bottom:8px">📅</div>
+                <p style="font-size:0.87rem">Добавьте записи по дням</p>
+                <button onclick="addDayCard()" class="btn btn--outline" style="margin-top:12px;padding:8px 20px;font-size:0.82rem">Добавить первый день</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT: sidebar panel -->
+        <div style="position:sticky;top:80px;display:flex;flex-direction:column;gap:14px">
+
+          <!-- Visibility -->
+          <div class="form-section" style="margin:0">
+            <div class="form-section__title" style="font-size:1rem;margin-bottom:14px">Публикация</div>
+            <label class="tog-row">
+              <div class="tog" id="togPublic"><input type="checkbox" id="f-public"><span class="tog-sl"></span></div>
+              <div>
+                <div style="font-size:0.88rem;font-weight:500">Публичная поездка</div>
+                <div style="font-size:0.74rem;color:var(--mist)">Другие смогут видеть её</div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Quick checklist -->
+          <div class="form-section" style="margin:0">
+            <div class="form-section__title" style="font-size:1rem;margin-bottom:12px">Чек-лист вещей</div>
+            <div id="checkItems">
+              <div class="chk-row"><input type="checkbox"><input type="text" class="chk-inp" value="Паспорт" maxlength="200"></div>
+              <div class="chk-row"><input type="checkbox"><input type="text" class="chk-inp" value="Распечатать билеты" maxlength="200"></div>
+              <div class="chk-row"><input type="checkbox"><input type="text" class="chk-inp" value="Страховка" maxlength="200"></div>
+            </div>
+            <button onclick="addCheckItem()" class="btn btn--ghost" style="width:100%;margin-top:8px;padding:7px;font-size:0.8rem">+ Пункт</button>
+          </div>
+
+          <!-- Tags -->
+          <div class="form-section" style="margin:0">
+            <div class="form-section__title" style="font-size:1rem;margin-bottom:12px">Теги</div>
+            <div class="tags-box" id="tagsBox">
+              <div id="tagsList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px"></div>
+              <input type="text" id="tagInput" placeholder="Добавить тег..." maxlength="30"
+                     onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addTag()}"
+                     style="border:none;outline:none;font-family:var(--font-sans);font-size:0.84rem;width:100%;background:transparent">
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px" id="presetTags">
+              <button class="tag-pre" onclick="addTagVal('пляж')">🏖 пляж</button>
+              <button class="tag-pre" onclick="addTagVal('горы')">⛰ горы</button>
+              <button class="tag-pre" onclick="addTagVal('соло')">🧍 соло</button>
+              <button class="tag-pre" onclick="addTagVal('семья')">👨‍👩‍👧 семья</button>
+              <button class="tag-pre" onclick="addTagVal('бюджетно')">💸 бюджетно</button>
+              <button class="tag-pre" onclick="addTagVal('гастротур')">🍜 гастро</button>
+              <button class="tag-pre" onclick="addTagVal('история')">🏛 история</button>
+              <button class="tag-pre" onclick="addTagVal('природа')">🌿 природа</button>
+            </div>
+          </div>
+
+          <button class="btn btn--primary" style="width:100%;padding:14px;font-size:0.95rem" onclick="submitTrip(false)">
+            ✓ Сохранить поездку
+          </button>
+          <button class="btn btn--ghost" style="width:100%;font-size:0.84rem" onclick="submitTrip(true)">
+            Сохранить черновик
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<style>
+.trip-form-layout { display:grid; grid-template-columns:1fr 310px; gap:20px; align-items:start; }
+.form-section { background:var(--white); border-radius:var(--radius-md); border:1px solid var(--sand); padding:24px 28px; margin-bottom:0; }
+.form-section__title { font-family:var(--font-serif); font-size:1.1rem; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--sand); }
+.flimit { font-family:var(--font-mono); font-size:0.68rem; color:var(--mist); float:right; font-weight:400; }
+
+/* Cover */
+.cover-drop { height:240px; background:var(--cream); border:2px dashed var(--sand); cursor:pointer; transition:all .2s; position:relative; overflow:hidden; border-radius:var(--radius-md); }
+.cover-drop:hover,.cover-drop.drag { border-color:var(--gold); background:#fdf8f0; }
+.cover-drop__hint { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--mist); }
+.cover-drop__hint p { font-size:0.88rem; }
+
+/* Stars */
+.star-row { display:flex; align-items:center; gap:4px; font-size:1.8rem; cursor:pointer; margin-top:4px; }
+.star-row span { color:var(--sand); transition:color .15s; user-select:none; }
+.star-row span.on { color:var(--gold); }
+
+/* Toggle */
+.tog-row { display:flex; align-items:center; gap:14px; cursor:pointer; }
+.tog { position:relative; width:44px; height:24px; flex-shrink:0; display:block; }
+.tog input { opacity:0; width:0; height:0; }
+.tog-sl { position:absolute; inset:0; background:var(--sand); border-radius:12px; transition:.3s; cursor:pointer; }
+.tog-sl::after { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:var(--white); border-radius:50%; transition:.3s; box-shadow:0 1px 4px rgba(0,0,0,0.15); }
+.tog input:checked ~ .tog-sl { background:var(--gold); }
+.tog input:checked ~ .tog-sl::after { transform:translateX(20px); }
+
+/* Checklist */
+.chk-row { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+.chk-row input[type=checkbox] { accent-color:var(--gold); width:15px; height:15px; flex-shrink:0; cursor:pointer; }
+.chk-inp { flex:1; border:none; border-bottom:1px solid var(--sand); padding:3px 0; font-family:var(--font-sans); font-size:0.85rem; background:transparent; outline:none; }
+.chk-inp:focus { border-color:var(--gold); }
+
+/* Tags */
+.tags-box { border:1.5px solid var(--sand); border-radius:8px; padding:8px 10px; transition:border-color .2s; }
+.tags-box:focus-within { border-color:var(--gold); }
+.tag-chip { display:inline-flex; align-items:center; gap:5px; background:var(--cream); border:1px solid var(--sand); border-radius:100px; padding:3px 10px; font-size:0.74rem; }
+.tag-chip button { opacity:0.5; font-size:0.7rem; padding:0 2px; cursor:pointer; }
+.tag-chip button:hover { opacity:1; color:var(--rust); }
+.tag-pre { padding:4px 10px; border-radius:100px; border:1px solid var(--sand); font-size:0.72rem; color:var(--mist); background:var(--cream); cursor:pointer; transition:all .2s; white-space:nowrap; }
+.tag-pre:hover { border-color:var(--gold); color:var(--gold); background:#fdf8f0; }
+
+/* Day card */
+.day-card { background:var(--cream); border:1px solid var(--sand); border-radius:10px; margin-bottom:10px; overflow:hidden; }
+.day-card__head { padding:12px 16px; display:flex; align-items:center; gap:10px; cursor:pointer; background:var(--white); border-bottom:1px solid var(--sand); }
+.day-card__num { width:26px; height:26px; border-radius:50%; background:var(--ink); color:var(--white); display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-family:var(--font-mono); flex-shrink:0; }
+.day-card__body { padding:14px 16px; display:none; }
+.day-card.open .day-card__body { display:block; }
+.day-card.open .day-card__head { background:var(--cream); }
+.form-alert { padding:12px 16px; border-radius:8px; font-size:0.87rem; }
+.form-alert--error { background:#fdecea; color:var(--rust); border:1px solid #f5c4bf; }
+.form-alert--success { background:#e8f5e4; color:var(--sage); border:1px solid #c3e6bb; }
+
+@media(max-width:900px) { .trip-form-layout { grid-template-columns:1fr; } }
+</style>
+
+<script src="../js/main.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/avatar.js"></script>
+<script src="../js/validate.js"></script>
+<script>
+let tags    = [];
+let dayCount = 0;
+const editId = new URLSearchParams(location.search).get('edit');
+
+// ── Init ───────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  await initPage('trip-new');
+  await loadCountries();
+  if (editId) loadExistingTrip(editId);
+  setupCoverDragDrop();
+});
+
+// ── Countries ──────────────────────────────────────
+async function loadCountries() {
+  const sel = document.getElementById('f-country');
+  try {
+    const list = await apiFetch('/countries');
+    list.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id; o.textContent = `${c.flag_emoji||''} ${c.name}`;
+      sel.appendChild(o);
+    });
+  } catch {
+    [['','— Выберите —'],['1','🇷🇺 Россия'],['2','🇫🇷 Франция'],['3','🇮🇹 Италия'],['5','🇩🇪 Германия'],['6','🇹🇷 Турция'],['7','🇹🇭 Таиланд'],['8','🇯🇵 Япония'],['10','🇬🇷 Греция'],['18','🇬🇪 Грузия'],['13','🇮🇩 Индонезия'],['17','🇺🇸 США']].forEach(([v,t]) => {
+      const o = document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o);
+    });
+  }
+}
+
+// ── Load for edit ──────────────────────────────────
+async function loadExistingTrip(id) {
+  document.getElementById('pageTitle').textContent = 'Редактировать поездку';
+  try {
+    const t = await apiFetch(`/trips/${id}`);
+    document.getElementById('f-title').value  = t.title || '';
+    document.getElementById('f-desc').value   = t.description || '';
+    document.getElementById('f-start').value  = t.start_date || '';
+    document.getElementById('f-end').value    = t.end_date   || '';
+    document.getElementById('f-status').value = t.status     || 'planned';
+    document.getElementById('f-mood').value   = t.mood       || '';
+    document.getElementById('f-budget').value = t.total_budget || '';
+    document.getElementById('f-currency').value = t.currency || 'RUB';
+    document.getElementById('f-public').checked = !!t.is_public;
+    if (t.country_id) document.getElementById('f-country').value = t.country_id;
+    if (t.rating) setRating(t.rating);
+    if (t.cover_url) {
+      document.getElementById('coverPreview').src = t.cover_url;
+      document.getElementById('coverPreview').style.display = 'block';
+      document.getElementById('coverHint').style.display = 'none';
+      document.getElementById('removeCover').style.display = 'block';
+    }
+    // Update counters
+    liveCount(document.getElementById('f-title'), 'titleLim', 255);
+    liveCount(document.getElementById('f-desc'),  'descLim',  5000);
+  } catch(e) { toast('Не удалось загрузить поездку', 'error'); }
+}
+
+// ── Cover drop ─────────────────────────────────────
+function setupCoverDragDrop() {
+  const drop = document.getElementById('coverDrop');
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) previewCoverFile(file);
+    else toast('Загружайте только изображения', 'error');
+  });
+}
+
+function previewCover(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { toast('Файл слишком большой (макс 10 MB)', 'error'); return; }
+  previewCoverFile(file);
+}
+
+function previewCoverFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('coverPreview').src = e.target.result;
+    document.getElementById('coverPreview').style.display = 'block';
+    document.getElementById('coverHint').style.display    = 'none';
+    document.getElementById('removeCover').style.display  = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeCoverFn() {
+  document.getElementById('coverPreview').src              = '';
+  document.getElementById('coverPreview').style.display   = 'none';
+  document.getElementById('coverHint').style.display      = 'flex';
+  document.getElementById('removeCover').style.display    = 'none';
+  document.getElementById('coverFile').value              = '';
+}
+
+// ── Stars ──────────────────────────────────────────
+function setRating(val) {
+  document.getElementById('f-rating').value = val || '';
+  document.querySelectorAll('.star-row span').forEach(s => {
+    s.classList.toggle('on', parseInt(s.dataset.v) <= val);
+  });
+}
+
+// ── Tags ───────────────────────────────────────────
+function addTag() {
+  const inp = document.getElementById('tagInput');
+  const val = inp.value.trim().replace(/,$/, '').slice(0, 30);
+  if (!val || tags.includes(val) || tags.length >= 10) { inp.value=''; return; }
+  tags.push(val); renderTags(); inp.value='';
+}
+function addTagVal(val) { if (!tags.includes(val) && tags.length < 10) { tags.push(val); renderTags(); } }
+function removeTag(val) { tags = tags.filter(t => t !== val); renderTags(); }
+function renderTags() {
+  document.getElementById('tagsList').innerHTML = tags.map(t =>
+    `<span class="tag-chip">${t}<button onclick="removeTag('${t.replace(/'/g,"\\'")}')">✕</button></span>`
+  ).join('');
+}
+
+// ── Checklist ──────────────────────────────────────
+function addCheckItem() {
+  const cont = document.getElementById('checkItems');
+  const row = document.createElement('div');
+  row.className = 'chk-row';
+  row.innerHTML = `<input type="checkbox"><input type="text" class="chk-inp" placeholder="Новый пункт..." maxlength="200">`;
+  cont.appendChild(row);
+  row.querySelector('.chk-inp').focus();
+}
+
+// ── Day cards ──────────────────────────────────────
+function addDayCard() {
+  const empty = document.getElementById('daysEmpty');
+  if (empty) empty.remove();
+  dayCount++;
+  const cont = document.getElementById('daysContainer');
+  const card = document.createElement('div');
+  card.className = 'day-card open';
+  card.dataset.day = dayCount;
+  card.innerHTML = `
+    <div class="day-card__head" onclick="this.parentElement.classList.toggle('open')">
+      <div class="day-card__num">${dayCount}</div>
+      <input type="text" class="day-card-title" placeholder="День ${dayCount}: заголовок" maxlength="255"
+             onclick="event.stopPropagation()" style="flex:1;border:none;background:transparent;font-family:var(--font-serif);font-size:0.95rem;outline:none">
+      <input type="date" onclick="event.stopPropagation()" class="day-card-date" min="1920-01-01" max="2099-12-31"
+             style="border:none;font-size:0.75rem;color:var(--mist);font-family:var(--font-mono);outline:none;background:transparent">
+      <button onclick="event.stopPropagation();removeDay(this)" style="color:var(--mist);font-size:0.9rem;padding:4px 6px;margin-left:4px">✕</button>
+    </div>
+    <div class="day-card__body">
+      <div class="form-row" style="margin-bottom:12px">
+        <div class="field" style="margin:0">
+          <label style="font-size:0.78rem">Город</label>
+          <input type="text" class="day-city" placeholder="Токио" maxlength="100">
+        </div>
+        <div class="field" style="margin:0">
+          <label style="font-size:0.78rem">Погода</label>
+          <input type="text" class="day-weather" placeholder="Солнечно +22°" maxlength="100">
+        </div>
+      </div>
+      <div class="field">
+        <label style="font-size:0.78rem">Запись дня <span class="flimit" id="dayContent${dayCount}Lim">0/5000</span></label>
+        <textarea class="day-content" placeholder="Что происходило? Что видели, чувствовали, ели..." maxlength="5000" rows="4"
+                  oninput="liveCount(this,'dayContent${dayCount}Lim',5000)"></textarea>
+      </div>
+    </div>`;
+  cont.appendChild(card);
+}
+
+function removeDay(btn) {
+  if (!confirm('Удалить этот день?')) return;
+  btn.closest('.day-card').remove();
+}
+
+// ── Helpers ────────────────────────────────────────
+function clampNum(input, min, max) {
+  const v = parseFloat(input.value);
+  if (isNaN(v)) return;
+  if (v < min) input.value = min;
+  if (v > max) input.value = max;
+  // Целое для бюджета
+  input.value = Math.floor(parseFloat(input.value));
+}
+
+function liveCount(input, id, max) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const len = input.value.length;
+  el.textContent = `${len}/${max}`;
+  el.style.color = len > max * 0.9 ? 'var(--rust)' : len > max * 0.75 ? 'var(--gold)' : 'var(--mist)';
+}
+
+function showAlert(msg, type='error') {
+  const el = document.getElementById('formAlert');
+  el.textContent = msg;
+  el.className = `form-alert form-alert--${type}`;
+  el.style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Submit ─────────────────────────────────────────
+async function submitTrip(isDraft) {
+  const title    = document.getElementById('f-title').value.trim();
+  const desc     = document.getElementById('f-desc').value.trim();
+  const countryId = document.getElementById('f-country').value;
+  const city     = document.getElementById('f-city').value.trim();
+  const startDate = document.getElementById('f-start').value;
+  const endDate   = document.getElementById('f-end').value;
+
+  // Validation
+  if (!title) { showAlert('Введите название путешествия'); return; }
+  if (title.length > 255) { showAlert('Название слишком длинное (макс 255)'); return; }
+  if (desc.length > 5000) { showAlert('Описание слишком длинное (макс 5000)'); return; }
+  if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+    showAlert('Дата окончания не может быть раньше даты начала'); return;
+  }
+
+  const payload = {
+    title,
+    description:  desc   || null,
+    country_id:   countryId || null,
+    start_date:   startDate || null,
+    end_date:     endDate   || null,
+    status:       isDraft ? 'planned' : (document.getElementById('f-status').value),
+    mood:         document.getElementById('f-mood').value || null,
+    rating:       document.getElementById('f-rating').value || null,
+    total_budget: document.getElementById('f-budget').value || null,
+    currency:     document.getElementById('f-currency').value,
+    is_public:    document.getElementById('f-public').checked,
+  };
+
+  try {
+    let result;
+    if (editId) {
+      await apiFetch(`/trips/${editId}`, { method: 'PUT', body: JSON.stringify(payload) });
+      result = { id: editId };
+    } else {
+      result = await apiFetch('/trips', { method: 'POST', body: JSON.stringify(payload) });
+    }
+
+    showAlert(isDraft ? 'Черновик сохранён!' : 'Поездка сохранена! 🎉', 'success');
+
+    // Сохранить дни
+    const days = document.querySelectorAll('.day-card');
+    for (let i = 0; i < days.length; i++) {
+      const d = days[i];
+      const content = d.querySelector('.day-content')?.value?.trim();
+      const dayTitle = d.querySelector('.day-card-title')?.value?.trim();
+      if (content || dayTitle) {
+        await apiFetch(`/trips/${result.id}/days`, {
+          method: 'POST',
+          body: JSON.stringify({
+            day_number: i + 1,
+            title:   (dayTitle || '').slice(0, 255),
+            content: (content  || '').slice(0, 5000),
+            date:    d.querySelector('.day-card-date')?.value || null,
+            weather: (d.querySelector('.day-weather')?.value || '').slice(0, 100),
+            city_name: (d.querySelector('.day-city')?.value || '').slice(0, 100),
+          }),
+        });
+      }
+    }
+
+    setTimeout(() => { window.location.href = `trip.html?id=${result.id}`; }, 900);
+  } catch(e) {
+    showAlert(e.message || 'Ошибка сохранения');
+  }
+}
+</script>
+</body>
+</html>

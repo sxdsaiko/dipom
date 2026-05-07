@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Путешествие — WanderLog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <!-- Top bar -->
+    <header class="top-bar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <a href="trips.html" style="color:var(--mist);font-size:0.85rem;display:flex;align-items:center;gap:6px">
+          ← Мои поездки
+        </a>
+      </div>
+      <div class="top-bar__actions" id="topActions" style="display:none">
+        <button class="btn btn--ghost" onclick="togglePublic()" id="publicBtn" style="padding:9px 18px;font-size:0.83rem"></button>
+        <a id="editBtn" href="#" class="btn btn--outline" style="padding:9px 18px;font-size:0.83rem">✏️ Редактировать</a>
+        <button class="btn" onclick="deleteTrip()" style="background:var(--cream);color:var(--rust);padding:9px 18px;font-size:0.83rem;border-radius:100px">✕ Удалить</button>
+      </div>
+    </header>
+
+    <!-- Loading state -->
+    <div id="loadingState" class="page-body" style="display:flex;align-items:center;justify-content:center;min-height:60vh">
+      <div style="text-align:center">
+        <div class="spinner" style="margin:0 auto 16px"></div>
+        <p style="color:var(--mist)">Загрузка путешествия...</p>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div id="errorState" class="page-body" style="display:none;text-align:center;padding:80px 20px">
+      <div style="font-size:3rem;margin-bottom:16px">🔍</div>
+      <h2 style="font-family:var(--font-serif);margin-bottom:10px">Путешествие не найдено</h2>
+      <p style="color:var(--mist);margin-bottom:24px">Возможно, оно было удалено или у вас нет доступа</p>
+      <a href="trips.html" class="btn btn--primary">← К списку поездок</a>
+    </div>
+
+    <!-- Trip content -->
+    <div id="tripContent" style="display:none">
+
+      <!-- Hero cover -->
+      <div class="trip-hero" id="tripHero">
+        <div class="trip-hero__overlay"></div>
+        <img id="tripCover" src="" alt="" onerror="this.parentElement.style.background='linear-gradient(135deg,var(--slate),var(--ink))'">
+        <div class="trip-hero__content">
+          <div class="trip-hero__badge" id="tripStatus"></div>
+          <h1 class="trip-hero__title" id="tripTitle"></h1>
+          <div class="trip-hero__meta" id="tripMeta"></div>
+          <div class="trip-hero__stats" id="tripHeroStats"></div>
+        </div>
+      </div>
+
+      <div class="page-body">
+        <!-- Quick stats row -->
+        <div class="trip-stats-row" id="tripStatsRow"></div>
+
+        <div class="trip-layout">
+          <!-- Left: main content -->
+          <div class="trip-main">
+
+            <!-- Description -->
+            <div class="card" id="descCard" style="margin-bottom:20px;display:none">
+              <div class="card__header"><span class="card__title">О путешествии</span></div>
+              <div class="card__body">
+                <p id="tripDesc" style="line-height:1.8;color:var(--ink)"></p>
+              </div>
+            </div>
+
+            <!-- Tab nav -->
+            <div class="trip-tabs">
+              <button class="trip-tab active" onclick="showTripTab('diary',this)">📖 Дневник</button>
+              <button class="trip-tab" onclick="showTripTab('photos',this)">📸 Фото</button>
+              <button class="trip-tab" onclick="showTripTab('expenses',this)">💰 Расходы</button>
+              <button class="trip-tab" onclick="showTripTab('comments',this)">💬 Комментарии</button>
+            </div>
+
+            <!-- DIARY tab -->
+            <div id="tab-diary">
+              <div id="daysContainer"></div>
+              <div id="addDaySection" style="display:none;margin-top:12px">
+                <button class="btn btn--outline" onclick="addDayForm()" style="width:100%;padding:12px;font-size:0.85rem">+ Добавить день</button>
+              </div>
+            </div>
+
+            <!-- PHOTOS tab -->
+            <div id="tab-photos" style="display:none">
+              <div id="photosOwnerActions" style="display:none;margin-bottom:16px">
+                <button class="btn btn--outline" onclick="document.getElementById('photoUpload').click()" style="padding:10px 22px;font-size:0.85rem">
+                  + Загрузить фото
+                </button>
+                <input type="file" id="photoUpload" multiple accept="image/*" style="display:none" onchange="uploadPhotos(this)">
+              </div>
+              <div id="photosGrid" class="masonry-grid" style="column-count:3"></div>
+              <div id="photosEmpty" style="display:none;text-align:center;padding:40px;color:var(--mist)">
+                <div style="font-size:2.5rem;margin-bottom:12px">📷</div>
+                <p>Фотографий пока нет</p>
+              </div>
+            </div>
+
+            <!-- EXPENSES tab -->
+            <div id="tab-expenses" style="display:none">
+              <div id="expensesOwnerActions" style="display:none;margin-bottom:16px;display:none">
+                <button class="btn btn--outline" onclick="openAddExpense()" style="padding:10px 22px;font-size:0.85rem">+ Добавить расход</button>
+              </div>
+              <div id="expensesContent"></div>
+            </div>
+
+            <!-- COMMENTS tab -->
+            <div id="tab-comments" style="display:none">
+              <div id="commentForm" style="margin-bottom:20px;display:none">
+                <textarea id="commentText" placeholder="Напишите комментарий..." rows="3"
+                  style="width:100%;padding:12px 14px;border:1.5px solid var(--sand);border-radius:10px;font-family:var(--font-sans);font-size:0.9rem;outline:none;resize:vertical"></textarea>
+                <div style="display:flex;justify-content:flex-end;margin-top:8px">
+                  <button class="btn btn--primary" style="padding:9px 22px;font-size:0.85rem" onclick="postComment()">Отправить</button>
+                </div>
+              </div>
+              <div id="commentsContainer"></div>
+            </div>
+
+          </div>
+
+          <!-- Right sidebar -->
+          <div class="trip-sidebar">
+
+            <!-- Info card -->
+            <div class="card" style="margin-bottom:16px">
+              <div class="card__header"><span class="card__title">Информация</span></div>
+              <div class="card__body" id="tripInfoCard"></div>
+            </div>
+
+            <!-- Expense summary -->
+            <div class="card" id="expenseSummaryCard" style="margin-bottom:16px;display:none">
+              <div class="card__header"><span class="card__title">Расходы</span></div>
+              <div class="card__body" id="expenseSummary"></div>
+            </div>
+
+            <!-- Actions (like, favorite) -->
+            <div class="card" id="tripActionsCard" style="margin-bottom:16px">
+              <div class="card__body" style="display:flex;gap:10px">
+                <button id="likeBtn" onclick="toggleLike()" class="trip-action-btn">
+                  ♥ <span id="likesCount">0</span>
+                </button>
+                <button id="favBtn" onclick="toggleFavorite()" class="trip-action-btn">
+                  ☆ В избранное
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div><!-- /tripContent -->
+  </main>
+</div>
+
+<!-- Expense add modal -->
+<div class="modal-overlay" id="expenseModal" style="display:none">
+  <div class="modal" style="max-width:460px">
+    <div class="modal__header"><h3>Добавить расход</h3></div>
+    <div class="modal__body">
+      <div class="field">
+        <label>Название *</label>
+        <input type="text" id="exp-title" placeholder="Отель, ужин, такси...">
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Категория</label>
+          <select id="exp-cat">
+            <option value="accommodation">🏨 Жильё</option>
+            <option value="food" selected>🍜 Еда</option>
+            <option value="transport">🚌 Транспорт</option>
+            <option value="activities">🎭 Активности</option>
+            <option value="shopping">🛍️ Шопинг</option>
+            <option value="health">💊 Здоровье</option>
+            <option value="visa">📋 Виза</option>
+            <option value="insurance">🛡️ Страховка</option>
+            <option value="other">📦 Прочее</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Валюта</label>
+          <select id="exp-currency">
+            <option value="RUB">₽ Рубль</option>
+            <option value="USD">$ Доллар</option>
+            <option value="EUR">€ Евро</option>
+            <option value="GBP">£ Фунт</option>
+            <option value="TRY">₺ Лира</option>
+            <option value="THB">฿ Бат</option>
+            <option value="JPY">¥ Иена</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Сумма *</label>
+          <input type="number" id="exp-amount" placeholder="0" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Дата</label>
+          <input type="date" id="exp-date">
+        </div>
+      </div>
+      <div class="field">
+        <label>Заметка</label>
+        <input type="text" id="exp-note" placeholder="Необязательно">
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeExpenseModal()">Отмена</button>
+      <button class="btn btn--primary" onclick="saveExpense()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Hero */
+.trip-hero { position:relative; height:420px; overflow:hidden; background:var(--slate); }
+.trip-hero img { width:100%; height:100%; object-fit:cover; }
+.trip-hero__overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 60%, transparent 100%); z-index:1; }
+.trip-hero__content { position:absolute; bottom:0; left:0; right:0; z-index:2; padding:36px 40px; color:var(--white); }
+.trip-hero__badge { display:inline-block; margin-bottom:12px; padding:4px 14px; border-radius:100px; font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.12em; }
+.trip-hero__badge--completed { background:rgba(74,103,65,0.85); }
+.trip-hero__badge--planned   { background:rgba(201,169,110,0.85); }
+.trip-hero__badge--ongoing   { background:rgba(155,78,46,0.85); }
+.trip-hero__title { font-size:clamp(1.8rem,4vw,3rem); margin-bottom:10px; line-height:1.15; }
+.trip-hero__meta { font-size:0.9rem; opacity:0.75; margin-bottom:16px; display:flex; gap:16px; flex-wrap:wrap; }
+.trip-hero__stats { display:flex; gap:24px; }
+.trip-hero__stat { text-align:center; }
+.trip-hero__stat strong { display:block; font-family:var(--font-serif); font-size:1.6rem; line-height:1; }
+.trip-hero__stat span { font-size:0.65rem; opacity:0.6; text-transform:uppercase; letter-spacing:0.1em; }
+
+/* Stats row */
+.trip-stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+.trip-stat-mini { background:var(--white); border:1px solid var(--sand); border-radius:var(--radius-md); padding:16px 18px; display:flex; align-items:center; gap:12px; }
+.trip-stat-mini__icon { font-size:1.4rem; }
+.trip-stat-mini__val { font-family:var(--font-serif); font-size:1.3rem; line-height:1; }
+.trip-stat-mini__label { font-size:0.7rem; color:var(--mist); text-transform:uppercase; letter-spacing:0.08em; margin-top:2px; }
+
+/* Layout */
+.trip-layout { display:grid; grid-template-columns:1fr 300px; gap:20px; align-items:start; }
+.trip-sidebar { position:sticky; top:80px; }
+
+/* Tabs */
+.trip-tabs { display:flex; gap:2px; background:var(--cream); border-radius:12px; padding:4px; margin-bottom:20px; }
+.trip-tab { flex:1; padding:9px 14px; border-radius:9px; font-size:0.85rem; color:var(--mist); transition:all .2s; text-align:center; white-space:nowrap; }
+.trip-tab.active { background:var(--white); color:var(--ink); box-shadow:0 2px 8px rgba(0,0,0,0.07); font-weight:500; }
+
+/* Day card */
+.day-entry { background:var(--white); border:1px solid var(--sand); border-radius:var(--radius-md); margin-bottom:12px; overflow:hidden; }
+.day-entry__header { padding:14px 18px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:background .2s; }
+.day-entry__header:hover { background:var(--cream); }
+.day-entry__num { width:30px; height:30px; border-radius:50%; background:var(--ink); color:var(--white); display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-family:var(--font-mono); flex-shrink:0; }
+.day-entry__title { font-family:var(--font-serif); font-size:1rem; flex:1; }
+.day-entry__date { font-size:0.72rem; color:var(--mist); font-family:var(--font-mono); }
+.day-entry__body { padding:16px 18px; border-top:1px solid var(--sand); display:none; }
+.day-entry--open .day-entry__body { display:block; }
+.day-entry--open .day-entry__header { background:var(--cream); }
+.day-entry__content { font-size:0.92rem; line-height:1.8; color:var(--ink); white-space:pre-wrap; }
+
+/* Photos */
+.masonry-item { position:relative; cursor:pointer; border-radius:10px; overflow:hidden; break-inside:avoid; margin-bottom:12px; }
+.masonry-item img { width:100%; display:block; transition:transform .5s var(--ease-expo); }
+.masonry-item:hover img { transform:scale(1.05); }
+.masonry-item__overlay { position:absolute; inset:0; background:rgba(0,0,0,0.4); opacity:0; transition:opacity .3s; display:flex; align-items:center; justify-content:center; color:white; font-size:1.5rem; }
+.masonry-item:hover .masonry-item__overlay { opacity:1; }
+
+/* Expenses */
+.expense-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--sand); font-size:0.87rem; }
+.expense-row:last-child { border-bottom:none; }
+.expense-row__cat { width:28px; height:28px; border-radius:8px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
+.expense-row__info { flex:1; }
+.expense-row__title { font-weight:500; }
+.expense-row__date { font-size:0.72rem; color:var(--mist); font-family:var(--font-mono); }
+.expense-row__amount { font-family:var(--font-mono); font-size:0.9rem; font-weight:600; text-align:right; }
+
+/* Info card */
+.info-row { display:flex; justify-content:space-between; align-items:flex-start; padding:8px 0; border-bottom:1px solid var(--sand); font-size:0.84rem; gap:12px; }
+.info-row:last-child { border-bottom:none; }
+.info-row__label { color:var(--mist); flex-shrink:0; }
+.info-row__val { text-align:right; font-weight:500; }
+
+/* Comments */
+.comment-item { display:flex; gap:12px; margin-bottom:20px; }
+.comment-item__avatar { width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0; }
+.comment-item__body { flex:1; }
+.comment-item__author { font-size:0.85rem; font-weight:500; margin-bottom:4px; }
+.comment-item__text { font-size:0.88rem; line-height:1.6; color:var(--ink); }
+.comment-item__date { font-size:0.72rem; color:var(--mist); margin-top:4px; font-family:var(--font-mono); }
+
+/* Action buttons */
+.trip-action-btn { flex:1; padding:10px; border-radius:10px; border:1.5px solid var(--sand); font-size:0.85rem; color:var(--ink-60); transition:all .2s; }
+.trip-action-btn:hover { border-color:var(--gold); color:var(--gold); background:#fdf8f0; }
+.trip-action-btn.active { background:var(--gold); color:var(--white); border-color:var(--gold); }
+
+/* Modal */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:8000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.modal { background:var(--white); border-radius:var(--radius-lg); width:100%; box-shadow:0 24px 80px rgba(0,0,0,0.2); }
+.modal__header { padding:24px 28px 0; } .modal__header h3 { font-family:var(--font-serif); font-size:1.4rem; }
+.modal__body { padding:16px 28px; } .modal__footer { padding:12px 28px 24px; display:flex; gap:10px; justify-content:flex-end; border-top:1px solid var(--sand); margin-top:12px; }
+
+@media(max-width:900px) { .trip-layout { grid-template-columns:1fr; } .trip-sidebar { position:static; } .trip-stats-row { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:600px) { .trip-hero { height:280px; } .trip-hero__content { padding:20px; } .trip-tabs { overflow-x:auto; } }
+</style>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../js/validate.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/avatar.js"></script>
+<script>
+const tripId   = new URLSearchParams(location.search).get('id');
+let tripData   = null;
+let isOwner    = false;
+let isLiked    = false;
+let isFavorited = false;
+
+if (!tripId) window.location.href = 'trips.html';
+
+// ── CAT icons ──────────────────────────────────────
+const CAT_ICON = { accommodation:'🏨', food:'🍜', transport:'🚌', activities:'🎭', shopping:'🛍️', health:'💊', visa:'📋', insurance:'🛡️', other:'📦' };
+const CAT_NAME = { accommodation:'Жильё', food:'Еда', transport:'Транспорт', activities:'Активности', shopping:'Шопинг', health:'Здоровье', visa:'Виза', insurance:'Страховка', other:'Прочее' };
+const STATUS_LABEL = { completed:'✅ Завершено', planned:'📅 Запланировано', ongoing:'🧳 В процессе' };
+const MOOD_ICON    = { amazing:'🤩', good:'😊', okay:'😐', tough:'😓', terrible:'😞' };
+
+// ── Load trip ──────────────────────────────────────
+async function loadTrip() {
+  try {
+    tripData = await apiFetch(`/trips/${tripId}`);
+  } catch(e) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+    return;
+  }
+
+  const me = Auth.getUser();
+  isOwner    = me && (tripData.author_id === me.id || tripData.user_id === me.id);
+  isLiked    = tripData.isLiked;
+  isFavorited = tripData.isFavorited;
+
+  renderHero();
+  renderStats();
+  renderInfo();
+  renderDiary();
+  renderPhotos();
+  renderExpenses();
+  renderComments();
+  renderActions();
+
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('tripContent').style.display  = 'block';
+  document.title = `${tripData.title} — WanderLog`;
+}
+
+function renderHero() {
+  const t = tripData;
+  if (t.cover_url) {
+    document.getElementById('tripCover').src = t.cover_url;
+  } else {
+    document.getElementById('tripHero').style.background = 'linear-gradient(135deg, var(--slate), var(--ink))';
+    document.getElementById('tripCover').style.display = 'none';
+  }
+
+  const badge = document.getElementById('tripStatus');
+  badge.textContent  = STATUS_LABEL[t.status] || t.status;
+  badge.className    = `trip-hero__badge trip-hero__badge--${t.status}`;
+
+  document.getElementById('tripTitle').textContent = t.title;
+
+  const parts = [];
+  if (t.flag_emoji && t.country_name) parts.push(t.flag_emoji + ' ' + t.country_name);
+  if (t.city_name)  parts.push(t.city_name);
+  if (t.start_date) parts.push(new Date(t.start_date).toLocaleDateString('ru',{day:'numeric',month:'long',year:'numeric'}));
+  if (t.end_date)   parts.push('→ ' + new Date(t.end_date).toLocaleDateString('ru',{day:'numeric',month:'long',year:'numeric'}));
+  document.getElementById('tripMeta').textContent = parts.join('  ·  ');
+
+  const statsHtml = [
+    t.rating    ? `<div class="trip-hero__stat"><strong>${'★'.repeat(t.rating)}</strong><span>Рейтинг</span></div>` : '',
+    t.views_count != null ? `<div class="trip-hero__stat"><strong>${t.views_count}</strong><span>Просмотров</span></div>` : '',
+    t.likes_count != null ? `<div class="trip-hero__stat"><strong>${t.likes_count}</strong><span>Лайков</span></div>` : '',
+    t.photos?.length      ? `<div class="trip-hero__stat"><strong>${t.photos.length}</strong><span>Фото</span></div>` : '',
+  ].filter(Boolean).join('');
+  document.getElementById('tripHeroStats').innerHTML = statsHtml;
+}
+
+function renderStats() {
+  const t = tripData;
+  const expenses = t.expenses || [];
+  const totalSpent = expenses.reduce((s,e) => s + parseFloat(e.total||0), 0);
+  const days = t.days?.length || 0;
+  const photos = t.photos?.length || 0;
+
+  let duration = '';
+  if (t.start_date && t.end_date) {
+    const d = Math.ceil((new Date(t.end_date) - new Date(t.start_date)) / 86400000) + 1;
+    duration = d + ' ' + (d===1?'день':d<5?'дня':'дней');
+  }
+
+  document.getElementById('tripStatsRow').innerHTML = [
+    `<div class="trip-stat-mini"><div class="trip-stat-mini__icon">📅</div><div><div class="trip-stat-mini__val">${duration || '—'}</div><div class="trip-stat-mini__label">Длительность</div></div></div>`,
+    `<div class="trip-stat-mini"><div class="trip-stat-mini__icon">📖</div><div><div class="trip-stat-mini__val">${days}</div><div class="trip-stat-mini__label">Дней в дневнике</div></div></div>`,
+    `<div class="trip-stat-mini"><div class="trip-stat-mini__icon">📸</div><div><div class="trip-stat-mini__val">${photos}</div><div class="trip-stat-mini__label">Фотографий</div></div></div>`,
+    `<div class="trip-stat-mini"><div class="trip-stat-mini__icon">💰</div><div><div class="trip-stat-mini__val">${totalSpent > 0 ? Math.round(totalSpent).toLocaleString('ru') + ' ₽' : '—'}</div><div class="trip-stat-mini__label">Потрачено</div></div></div>`,
+  ].join('');
+}
+
+function renderInfo() {
+  const t = tripData;
+
+  // Description
+  if (t.description) {
+    document.getElementById('tripDesc').textContent = t.description;
+    document.getElementById('descCard').style.display = 'block';
+  }
+
+  const rows = [];
+  if (t.status)      rows.push(['Статус',    STATUS_LABEL[t.status] || t.status]);
+  if (t.country_name) rows.push(['Страна',   `${t.flag_emoji||''} ${t.country_name}`]);
+  if (t.city_name)   rows.push(['Город',     t.city_name]);
+  if (t.start_date)  rows.push(['Начало',    new Date(t.start_date).toLocaleDateString('ru',{day:'numeric',month:'long',year:'numeric'})]);
+  if (t.end_date)    rows.push(['Конец',     new Date(t.end_date).toLocaleDateString('ru',{day:'numeric',month:'long',year:'numeric'})]);
+  if (t.mood)        rows.push(['Настроение', (MOOD_ICON[t.mood]||'') + ' ' + t.mood]);
+  if (t.total_budget) rows.push(['Бюджет',   parseFloat(t.total_budget).toLocaleString('ru') + ' ' + (t.currency||'₽')]);
+  rows.push(['Публичная', t.is_public ? '✅ Да' : '🔒 Нет']);
+
+  document.getElementById('tripInfoCard').innerHTML = rows.map(([l,v]) =>
+    `<div class="info-row"><span class="info-row__label">${l}</span><span class="info-row__val">${v}</span></div>`
+  ).join('');
+
+  // Expense summary
+  if ((t.expenses||[]).length) {
+    const total = t.expenses.reduce((s,e) => s + parseFloat(e.total||0), 0);
+    document.getElementById('expenseSummaryCard').style.display = 'block';
+    document.getElementById('expenseSummary').innerHTML =
+      t.expenses.map(e =>
+        `<div class="info-row">
+          <span class="info-row__label">${CAT_ICON[e.category]||'📦'} ${CAT_NAME[e.category]||e.category}</span>
+          <span class="info-row__val">${Math.round(parseFloat(e.total)).toLocaleString('ru')} ₽</span>
+        </div>`
+      ).join('') +
+      `<div class="info-row" style="border-top:1px solid var(--sand);margin-top:4px;padding-top:8px">
+        <span style="font-weight:600">Итого</span>
+        <span style="font-weight:600;color:var(--gold)">${Math.round(total).toLocaleString('ru')} ₽</span>
+      </div>`;
+  }
+}
+
+function renderDiary() {
+  const days = tripData.days || [];
+  const el = document.getElementById('daysContainer');
+
+  if (isOwner) document.getElementById('addDaySection').style.display = 'block';
+
+  if (!days.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--mist)">
+      <div style="font-size:2rem;margin-bottom:10px">📖</div>
+      <p>Дневниковых записей пока нет</p>
+      ${isOwner ? `<button onclick="addDayForm()" class="btn btn--outline" style="margin-top:14px;padding:10px 22px;font-size:0.85rem">Добавить первую запись</button>` : ''}
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = days.map((d,i) => `
+    <div class="day-entry ${i===0?'day-entry--open':''}">
+      <div class="day-entry__header" onclick="this.parentElement.classList.toggle('day-entry--open')">
+        <div class="day-entry__num">${d.day_number||i+1}</div>
+        <div class="day-entry__title">${d.title || `День ${d.day_number||i+1}`}</div>
+        <div class="day-entry__date">
+          ${d.date ? new Date(d.date).toLocaleDateString('ru',{weekday:'short',day:'numeric',month:'long'}) : ''}
+          ${d.weather ? ' · '+d.weather : ''}
+          ${d.mood ? ' · '+(MOOD_ICON[d.mood]||'') : ''}
+        </div>
+        <span style="color:var(--mist);font-size:1rem;margin-left:8px">⌄</span>
+      </div>
+      <div class="day-entry__body">
+        ${d.content
+          ? `<div class="day-entry__content">${d.content}</div>`
+          : `<p style="color:var(--mist);font-style:italic">Запись пустая</p>`}
+      </div>
+    </div>`).join('');
+}
+
+function renderPhotos() {
+  const photos = tripData.photos || [];
+  const grid   = document.getElementById('photosGrid');
+  const empty  = document.getElementById('photosEmpty');
+
+  if (isOwner) document.getElementById('photosOwnerActions').style.display = 'block';
+
+  if (!photos.length) {
+    grid.style.display  = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  grid.style.display  = '';
+  empty.style.display = 'none';
+  grid.innerHTML = photos.map((p,i) => `
+    <div class="masonry-item" onclick="openPhoto(${i})">
+      <img src="${p.thumb_url||p.url}" alt="${p.caption||''}" loading="lazy">
+      <div class="masonry-item__overlay">🔍</div>
+    </div>`).join('');
+}
+
+function openPhoto(idx) {
+  const photos = tripData.photos || [];
+  if (!photos[idx]) return;
+  const p = photos[idx];
+  window.open(p.url, '_blank');
+}
+
+function renderExpenses() {
+  const el = document.getElementById('expensesContent');
+  if (isOwner) document.getElementById('expensesOwnerActions').style.display = 'block';
+
+  // Load detailed expenses
+  apiFetch(`/trips/${tripId}/expenses`).then(data => {
+    const items = data.items || [];
+    if (!items.length) {
+      el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--mist)">
+        <div style="font-size:2rem;margin-bottom:10px">💰</div>
+        <p>Расходов пока нет</p>
+        ${isOwner ? `<button onclick="openAddExpense()" class="btn btn--outline" style="margin-top:14px;padding:10px 22px;font-size:0.85rem">Добавить первый расход</button>` : ''}
+      </div>`;
+      return;
+    }
+
+    const total = items.reduce((s,e) => s + parseFloat(e.amount_rub||e.amount||0), 0);
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--sand)">
+        <span style="font-family:var(--font-serif);font-size:1.1rem">Всего потрачено</span>
+        <strong style="font-family:var(--font-serif);font-size:1.4rem;color:var(--gold)">${Math.round(total).toLocaleString('ru')} ₽</strong>
+      </div>
+      ${isOwner ? `<div style="margin-bottom:16px"><button onclick="openAddExpense()" class="btn btn--outline" style="padding:9px 20px;font-size:0.83rem">+ Добавить расход</button></div>` : ''}
+      <div>
+        ${items.map(e => `
+          <div class="expense-row">
+            <div class="expense-row__cat">${CAT_ICON[e.category]||'📦'}</div>
+            <div class="expense-row__info">
+              <div class="expense-row__title">${e.title}</div>
+              <div class="expense-row__date">${CAT_NAME[e.category]||e.category}${e.paid_at ? ' · ' + new Date(e.paid_at).toLocaleDateString('ru',{day:'numeric',month:'short'}) : ''}</div>
+            </div>
+            <div class="expense-row__amount">${parseFloat(e.amount).toLocaleString('ru')} ${e.currency||'₽'}</div>
+            ${isOwner ? `<button onclick="deleteExpense(${e.id})" style="color:var(--mist);font-size:0.8rem;padding:4px 8px;border-radius:4px;transition:color .2s" onmouseover="this.style.color='var(--rust)'" onmouseout="this.style.color='var(--mist)'">✕</button>` : ''}
+          </div>`).join('')}
+      </div>`;
+  }).catch(() => {
+    el.innerHTML = '<p style="color:var(--mist);text-align:center;padding:20px">Ошибка загрузки расходов</p>';
+  });
+}
+
+function renderComments() {
+  const el = document.getElementById('commentsContainer');
+  if (Auth.getToken()) document.getElementById('commentForm').style.display = 'block';
+
+  apiFetch(`/trips/${tripId}/comments`).then(comments => {
+    if (!comments.length) {
+      el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--mist)">
+        <p>Комментариев пока нет. Будьте первым!</p>
+      </div>`;
+      return;
+    }
+    el.innerHTML = comments.map(c => `
+      <div class="comment-item">
+        <img class="comment-item__avatar" src="${c.avatar_url||(typeof makeAvatarSVG==='function'?makeAvatarSVG((c.username||'?').slice(0,2).toUpperCase(),40):'')}" alt="${c.username}" onerror="if(typeof makeAvatarSVG==='function')this.src=makeAvatarSVG((c.username||'?').slice(0,2).toUpperCase(),40)">
+        <div class="comment-item__body">
+          <div class="comment-item__author">@${c.username}
+            ${c.first_name ? `<span style="font-weight:normal;color:var(--mist)"> · ${c.first_name}</span>` : ''}
+          </div>
+          <div class="comment-item__text">${c.content}</div>
+          <div class="comment-item__date">${new Date(c.created_at).toLocaleDateString('ru',{day:'numeric',month:'long',year:'numeric'})}</div>
+        </div>
+      </div>`).join('');
+  }).catch(() => { el.innerHTML = ''; });
+}
+
+function renderActions() {
+  const t = tripData;
+
+  // Owner actions
+  if (isOwner) {
+    document.getElementById('topActions').style.display = 'flex';
+    document.getElementById('editBtn').href = `trip-new.html?edit=${tripId}`;
+    const pb = document.getElementById('publicBtn');
+    pb.textContent = t.is_public ? '🔒 Сделать приватной' : '🌍 Опубликовать';
+  }
+
+  // Like button
+  const lb = document.getElementById('likeBtn');
+  if (isLiked) lb.classList.add('active');
+  lb.innerHTML = `${isLiked ? '♥' : '♡'} <span id="likesCount">${t.likes_count||0}</span>`;
+
+  // Favorite button
+  const fb = document.getElementById('favBtn');
+  if (isFavorited) { fb.classList.add('active'); fb.textContent = '★ В избранном'; }
+
+  // Hide actions if not logged in
+  if (!Auth.getToken()) document.getElementById('tripActionsCard').style.display = 'none';
+}
+
+// ── Tab switch ─────────────────────────────────────
+function showTripTab(name, btn) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display='none');
+  document.getElementById(`tab-${name}`).style.display = 'block';
+  document.querySelectorAll('.trip-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── Like / Favorite ────────────────────────────────
+async function toggleLike() {
+  if (!Auth.getToken()) { window.location.href = 'login.html'; return; }
+  try {
+    const res = await apiFetch(`/trips/${tripId}/like`, { method:'POST' });
+    isLiked = res.liked;
+    const count = parseInt(document.getElementById('likesCount').textContent) + (isLiked ? 1 : -1);
+    const lb = document.getElementById('likeBtn');
+    lb.innerHTML = `${isLiked?'♥':'♡'} <span id="likesCount">${Math.max(0,count)}</span>`;
+    isLiked ? lb.classList.add('active') : lb.classList.remove('active');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function toggleFavorite() {
+  if (!Auth.getToken()) { window.location.href = 'login.html'; return; }
+  try {
+    const res = await apiFetch(`/trips/${tripId}/favorite`, { method:'POST' });
+    isFavorited = res.favorited;
+    const fb = document.getElementById('favBtn');
+    if (isFavorited) { fb.classList.add('active'); fb.textContent = '★ В избранном'; }
+    else { fb.classList.remove('active'); fb.textContent = '☆ В избранное'; }
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function togglePublic() {
+  try {
+    await apiFetch(`/trips/${tripId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...tripData, is_public: !tripData.is_public }),
+    });
+    tripData.is_public = !tripData.is_public;
+    document.getElementById('publicBtn').textContent = tripData.is_public ? '🔒 Сделать приватной' : '🌍 Опубликовать';
+    toast(tripData.is_public ? 'Поездка опубликована' : 'Поездка скрыта', 'success');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deleteTrip() {
+  if (!confirm(`Удалить «${tripData.title}»? Это действие нельзя отменить.`)) return;
+  try {
+    await apiFetch(`/trips/${tripId}`, { method:'DELETE' });
+    toast('Удалено', 'success');
+    setTimeout(() => { window.location.href = 'trips.html'; }, 800);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Comments ───────────────────────────────────────
+async function postComment() {
+  const text = document.getElementById('commentText').value.trim();
+  if (!text) return;
+  try {
+    await apiFetch(`/trips/${tripId}/comments`, { method:'POST', body: JSON.stringify({ content:text }) });
+    document.getElementById('commentText').value = '';
+    renderComments();
+    toast('Комментарий добавлен', 'success');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Expenses ───────────────────────────────────────
+function openAddExpense() { document.getElementById('expenseModal').style.display='flex'; }
+function closeExpenseModal() { document.getElementById('expenseModal').style.display='none'; }
+
+async function saveExpense() {
+  const title  = document.getElementById('exp-title').value.trim();
+  const amount = document.getElementById('exp-amount').value;
+  if (!title || !amount) { toast('Заполните название и сумму','error'); return; }
+  try {
+    await apiFetch(`/trips/${tripId}/expenses`, {
+      method:'POST',
+      body: JSON.stringify({
+        title, amount: parseFloat(amount),
+        category: document.getElementById('exp-cat').value,
+        currency: document.getElementById('exp-currency').value,
+        paid_at:  document.getElementById('exp-date').value || null,
+        note:     document.getElementById('exp-note').value || null,
+      }),
+    });
+    closeExpenseModal();
+    renderExpenses();
+    toast('Расход добавлен','success');
+    ['exp-title','exp-amount','exp-note'].forEach(id => document.getElementById(id).value='');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deleteExpense(id) {
+  if (!confirm('Удалить расход?')) return;
+  try {
+    await apiFetch(`/trips/${tripId}/expenses/${id}`, { method:'DELETE' });
+    renderExpenses();
+    toast('Удалено','success');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Photo upload ───────────────────────────────────
+async function uploadPhotos(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  toast(`Загружаем ${files.length} фото...`, 'default');
+  const fd = new FormData();
+  files.forEach(f => fd.append('photos', f));
+  try {
+    const res = await fetch(`${API}/trips/${tripId}/photos`, {
+      method:'POST',
+      headers:{ Authorization:`Bearer ${Auth.getToken()}` },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast(`Загружено ${data.length} фото ✓`, 'success');
+    const updated = await apiFetch(`/trips/${tripId}`);
+    tripData.photos = updated.photos;
+    renderPhotos();
+  } catch(e) { toast('Ошибка загрузки: ' + e.message, 'error'); }
+}
+
+// ── Sidebar user ───────────────────────────────────
+async function loadSidebarUser() {
+  try {
+    const u = await apiFetch('/auth/me');
+    const el = document.getElementById('userName');
+    if (el) el.textContent = u.first_name || u.username;
+    const av = document.getElementById('userAvatar');
+    if (av && u.avatar_url) av.src = u.avatar_url;
+  } catch {}
+}
+
+// ── Init ───────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (typeof initPage === 'function') await initPage('trips');
+  loadTrip();
+});
+</script>
+</body>
+</html>

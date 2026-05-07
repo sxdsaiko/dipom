@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сообщество — WanderLog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<nav class="nav scrolled" style="position:sticky;top:0">
+  <a href="../index.html" class="nav__logo" style="color:var(--ink)">
+    <span class="nav__logo-icon">◈</span> WanderLog
+  </a>
+  <ul class="nav__links" style="display:flex">
+    <li><a href="../index.html" style="color:var(--ink-60)">Главная</a></li>
+    <li><a href="explore.html" style="color:var(--ink);font-weight:500">Сообщество</a></li>
+    <li><a href="map.html" style="color:var(--ink-60)">Карта</a></li>
+  </ul>
+  <div class="nav__actions" id="navActions">
+    <a href="login.html" class="btn btn--ghost">Войти</a>
+    <a href="register.html" class="btn btn--primary">Начать</a>
+  </div>
+</nav>
+
+<div style="max-width:1300px;margin:0 auto;padding:40px clamp(20px,4vw,60px) 80px">
+
+  <!-- Header -->
+  <div style="margin-bottom:36px">
+    <p class="section-eyebrow">Сообщество путешественников</p>
+    <h1 style="font-family:var(--font-serif);font-size:clamp(2rem,4vw,3rem);margin-bottom:10px">
+      Истории со всего <em>мира</em>
+    </h1>
+    <p style="color:var(--mist);font-size:0.95rem">Только реальные поездки реальных пользователей</p>
+  </div>
+
+  <!-- Search + filters -->
+  <div class="explore-controls">
+    <div class="explore-search">
+      <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--mist);fill:none;stroke-width:2;flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" placeholder="Поиск по названию, стране..." maxlength="200" oninput="applyFilters()">
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <select class="explore-select" id="sortSelect" onchange="applyFilters()">
+        <option value="newest">Новые</option>
+        <option value="popular">Популярные</option>
+        <option value="rating">По рейтингу</option>
+      </select>
+      <select class="explore-select" id="statusSelect" onchange="applyFilters()">
+        <option value="">Все статусы</option>
+        <option value="completed">Завершённые</option>
+        <option value="planned">Запланированные</option>
+        <option value="ongoing">В процессе</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Top travelers -->
+  <div id="topTravelersSection" style="margin-bottom:28px;display:none">
+    <p style="font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--mist);margin-bottom:12px">Активные путешественники</p>
+    <div class="top-travelers" id="topTravelers"></div>
+  </div>
+
+  <!-- Results info -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+    <p id="resultsCount" style="font-size:0.85rem;color:var(--mist)">Загрузка...</p>
+    <div style="display:flex;gap:6px">
+      <button class="view-btn-e active" onclick="setGrid(3,this)" title="3 колонки">⊞</button>
+      <button class="view-btn-e" onclick="setGrid(2,this)" title="2 колонки">⊟</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="exploreLoading" style="text-align:center;padding:80px 20px;color:var(--mist)">
+    <div class="spinner" style="margin:0 auto 16px"></div>
+    <p>Загружаем путешествия...</p>
+  </div>
+
+  <!-- Empty state -->
+  <div id="exploreEmpty" style="display:none;text-align:center;padding:80px 20px;color:var(--mist)">
+    <div style="font-size:3rem;margin-bottom:16px">🌍</div>
+    <h3 style="font-family:var(--font-serif);font-size:1.6rem;margin-bottom:10px;color:var(--ink)">Пока нет публичных поездок</h3>
+    <p style="margin-bottom:24px">Станьте первым! Создайте поездку и опубликуйте её.</p>
+    <a href="register.html" class="btn btn--primary">Зарегистрироваться</a>
+  </div>
+
+  <!-- Grid -->
+  <div id="exploreGrid" class="trips-grid" style="display:none"></div>
+
+  <!-- Load more -->
+  <div id="loadMoreWrap" style="text-align:center;margin-top:36px;display:none">
+    <button class="btn btn--outline" id="loadMoreBtn" onclick="loadMore()">Загрузить ещё</button>
+  </div>
+</div>
+
+<style>
+.explore-controls { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center; }
+.explore-search { flex:1; min-width:260px; display:flex; align-items:center; gap:10px; border:1.5px solid var(--sand); border-radius:10px; padding:10px 14px; background:var(--white); }
+.explore-search:focus-within { border-color:var(--gold); }
+.explore-search input { flex:1; border:none; outline:none; font-family:var(--font-sans); font-size:0.9rem; background:transparent; }
+.explore-select { padding:10px 14px; border:1.5px solid var(--sand); border-radius:10px; font-family:var(--font-sans); font-size:0.85rem; background:var(--white); color:var(--ink); outline:none; cursor:pointer; }
+.explore-select:focus { border-color:var(--gold); }
+.top-travelers { display:flex; gap:12px; overflow-x:auto; padding-bottom:4px; }
+.traveler-chip { display:flex; align-items:center; gap:10px; flex-shrink:0; background:var(--white); border:1px solid var(--sand); border-radius:12px; padding:10px 14px; cursor:pointer; transition:all .2s; }
+.traveler-chip:hover { border-color:var(--gold); box-shadow:0 4px 16px rgba(0,0,0,0.06); }
+.traveler-chip img { width:36px; height:36px; border-radius:50%; object-fit:cover; }
+.traveler-chip__name { font-size:0.84rem; font-weight:500; white-space:nowrap; }
+.traveler-chip__stat { font-size:0.7rem; color:var(--mist); font-family:var(--font-mono); }
+.view-btn-e { padding:6px 11px; border-radius:7px; border:1.5px solid var(--sand); font-size:1rem; color:var(--mist); background:var(--white); transition:all .2s; }
+.view-btn-e.active { background:var(--ink); color:var(--white); border-color:var(--ink); }
+</style>
+
+<script src="../js/main.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/avatar.js"></script>
+<script>
+// ── State ──────────────────────────────────────────
+let allTrips  = [];
+let displayed = [];
+let page      = 1;
+const PER_PAGE = 9;
+let gridCols  = 3;
+
+// ── Nav: если залогинен — показать "Мой дневник" ──
+(function() {
+  const user = Auth.getUser();
+  if (user) {
+    const actions = document.getElementById('navActions');
+    if (actions) {
+      actions.innerHTML = `
+        <a href="dashboard.html" class="btn btn--ghost">Мой дневник</a>
+        <button class="btn btn--primary" onclick="Auth.logout()">Выйти</button>`;
+    }
+  }
+})();
+
+// ── Load trips from API ────────────────────────────
+async function loadExplore() {
+  try {
+    const data = await apiFetch('/trips?limit=50&sort=created_at');
+    allTrips = data.data || [];
+    loadTopTravelers();
+    applyFilters();
+  } catch(e) {
+    document.getElementById('exploreLoading').innerHTML =
+      `<div style="font-size:2rem;margin-bottom:12px">⚠️</div>
+       <p style="color:var(--rust)">Не удалось загрузить поездки</p>
+       <p style="font-size:0.82rem;margin-top:6px;color:var(--mist)">${e.message}</p>
+       <button onclick="loadExplore()" class="btn btn--outline" style="margin-top:16px">↻ Повторить</button>`;
+  }
+}
+
+// ── Top travelers ──────────────────────────────────
+async function loadTopTravelers() {
+  // Собираем уникальных авторов из публичных поездок
+  const authorMap = {};
+  allTrips.forEach(t => {
+    const uid = t.user_id;
+    if (!authorMap[uid]) {
+      authorMap[uid] = { id: uid, username: t.username, first_name: t.first_name, last_name: t.last_name, avatar_url: t.avatar_url, trips: 0 };
+    }
+    authorMap[uid].trips++;
+  });
+
+  const authors = Object.values(authorMap).sort((a,b) => b.trips - a.trips).slice(0, 6);
+  if (!authors.length) return;
+
+  const section = document.getElementById('topTravelersSection');
+  section.style.display = 'block';
+
+  document.getElementById('topTravelers').innerHTML = authors.map(a => {
+    const initials = getInitials(a.first_name, a.last_name, a.username);
+    const avatarSrc = a.avatar_url || makeAvatarSVG(initials, 36);
+    const name = a.first_name ? `${a.first_name} ${a.last_name||''}`.trim() : a.username;
+    return `<div class="traveler-chip">
+      <img src="${avatarSrc}" alt="${name}" onerror="this.src='${makeAvatarSVG(initials,36)}'">
+      <div>
+        <div class="traveler-chip__name">${name}</div>
+        <div class="traveler-chip__stat">${a.trips} ${a.trips===1?'поездка':a.trips<5?'поездки':'поездок'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Filter & sort ──────────────────────────────────
+function applyFilters() {
+  const q      = document.getElementById('searchInput').value.toLowerCase().trim();
+  const sort   = document.getElementById('sortSelect').value;
+  const status = document.getElementById('statusSelect').value;
+
+  let result = allTrips.filter(t =>
+    (!status || t.status === status) &&
+    (!q || t.title.toLowerCase().includes(q) || (t.country_name||'').toLowerCase().includes(q) || (t.username||'').toLowerCase().includes(q))
+  );
+
+  if (sort === 'popular') result.sort((a,b) => (b.views_count||0) - (a.views_count||0));
+  if (sort === 'newest')  result.sort((a,b) => b.id - a.id);
+  if (sort === 'rating')  result.sort((a,b) => (b.rating||0) - (a.rating||0));
+
+  displayed = result;
+  page = 1;
+  renderTrips();
+}
+
+// ── Render ─────────────────────────────────────────
+const STATUS_LABEL = { completed:'Завершено', planned:'Запланировано', ongoing:'В процессе' };
+const STATUS_CLS   = { completed:'completed', planned:'planned', ongoing:'ongoing' };
+
+function renderTrips() {
+  const loading = document.getElementById('exploreLoading');
+  const empty   = document.getElementById('exploreEmpty');
+  const grid    = document.getElementById('exploreGrid');
+  const lmWrap  = document.getElementById('loadMoreWrap');
+
+  loading.style.display = 'none';
+
+  if (!displayed.length) {
+    empty.style.display = 'block';
+    grid.style.display  = 'none';
+    lmWrap.style.display = 'none';
+    document.getElementById('resultsCount').textContent = 'Ничего не найдено';
+    return;
+  }
+
+  empty.style.display = 'none';
+  grid.style.display  = '';
+  grid.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
+
+  const paged = displayed.slice(0, page * PER_PAGE);
+  document.getElementById('resultsCount').textContent =
+    `Найдено ${displayed.length} путешествий`;
+
+  grid.innerHTML = paged.map(t => {
+    const cover   = t.cover_url || '';
+    const stars   = t.rating ? '★'.repeat(t.rating) : '';
+    const initials = getInitials(t.first_name, t.last_name, t.username);
+    const avatarSrc = t.avatar_url || makeAvatarSVG(initials, 40);
+    const authorName = t.first_name ? `${t.first_name} ${t.last_name||''}`.trim() : (t.username || '—');
+    const dateStr = t.start_date
+      ? new Date(t.start_date).toLocaleDateString('ru',{month:'short',year:'numeric'})
+      : '';
+    return `
+      <div class="trip-card" onclick="goToTrip(${t.id})">
+        <div class="trip-card__img" style="${!cover?'background:linear-gradient(135deg,var(--slate),var(--ink))':''};height:200px">
+          ${cover ? `<img src="${cover}" alt="${t.title}" loading="lazy" onerror="this.style.display='none'">` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:3rem">${t.flag_emoji||'🌍'}</div>`}
+          <span class="trip-card__status trip-card__status--${STATUS_CLS[t.status]||'planned'}">
+            ${STATUS_LABEL[t.status]||t.status}
+          </span>
+        </div>
+        <div class="trip-card__body">
+          <div class="trip-card__meta">
+            <span class="trip-card__country">${t.flag_emoji||''} ${t.country_name||'—'}</span>
+            <span style="color:var(--gold);font-size:0.8rem">${stars}</span>
+          </div>
+          <h3 class="trip-card__title">${t.title}</h3>
+          <div class="trip-card__dates">${dateStr}</div>
+          <div class="trip-card__footer">
+            <div class="trip-card__author">
+              <img src="${avatarSrc}" alt="${authorName}"
+                   onerror="this.src='${makeAvatarSVG(initials,28)}'">
+              <span>${authorName}</span>
+            </div>
+            <div class="trip-card__stats">
+              <span>♥ ${t.likes_count||0}</span>
+              <span>◎ ${t.views_count||0}</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  lmWrap.style.display = paged.length < displayed.length ? 'block' : 'none';
+
+  // Animate cards
+  grid.querySelectorAll('.trip-card').forEach((el,i) => {
+    el.style.opacity = '0'; el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity .4s, transform .4s';
+    setTimeout(() => { el.style.opacity='1'; el.style.transform='translateY(0)'; }, i*40);
+  });
+}
+
+function goToTrip(id) {
+  if (Auth.getToken()) {
+    window.location.href = `trip.html?id=${id}`;
+  } else {
+    window.location.href = `trip.html?id=${id}`;
+  }
+}
+
+function loadMore() { page++; renderTrips(); }
+
+function setGrid(cols, btn) {
+  gridCols = cols;
+  document.querySelectorAll('.view-btn-e').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const grid = document.getElementById('exploreGrid');
+  if (grid) grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadExplore();
+});
+</script>
+</body>
+</html>

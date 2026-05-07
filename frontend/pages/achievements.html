@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Достижения — WanderLog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <h1 class="top-bar__title">Достижения</h1>
+      <div class="top-bar__actions">
+        <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--mist)">
+          Заработано: <strong id="earnedCount" style="color:var(--gold)">0</strong> / 14
+        </div>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <!-- Loading -->
+      <div id="achLoading" style="text-align:center;padding:60px;color:var(--mist)">
+        <div class="spinner" style="margin:0 auto 16px"></div>
+        <p>Загрузка достижений...</p>
+      </div>
+
+      <!-- Progress bar (hidden until loaded) -->
+      <div id="achContent" style="display:none">
+        <div class="card" style="margin-bottom:24px">
+          <div class="card__body" style="display:flex;align-items:center;gap:24px">
+            <div style="font-size:3rem">🏆</div>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                <span style="font-family:var(--font-serif);font-size:1.15rem">Прогресс исследователя</span>
+                <span style="font-family:var(--font-mono);font-size:0.8rem;color:var(--gold)" id="progressLabel">0/14</span>
+              </div>
+              <div style="height:8px;background:var(--sand);border-radius:4px;overflow:hidden">
+                <div id="progressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--gold),#a07840);border-radius:4px;transition:width 1s"></div>
+              </div>
+              <div style="font-size:0.78rem;color:var(--mist);margin-top:6px" id="progressHint"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter -->
+        <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
+          <button class="filter-btn active" onclick="filterAch('all',this)">Все</button>
+          <button class="filter-btn" onclick="filterAch('trips',this)">✈️ Поездки</button>
+          <button class="filter-btn" onclick="filterAch('countries',this)">🌍 Страны</button>
+          <button class="filter-btn" onclick="filterAch('photos',this)">📸 Фото</button>
+          <button class="filter-btn" onclick="filterAch('social',this)">❤️ Социальное</button>
+          <button class="filter-btn" onclick="filterAch('special',this)">⭐ Особые</button>
+        </div>
+
+        <div class="ach-grid" id="achGrid"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<style>
+.ach-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:16px; }
+.ach-card {
+  background:var(--white); border:1px solid var(--sand); border-radius:var(--radius-md);
+  padding:26px 18px; text-align:center;
+  transition:transform .3s var(--ease-expo), box-shadow .3s;
+  position:relative; overflow:hidden;
+}
+.ach-card:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,0.08); }
+.ach-card--earned {
+  border-color:var(--gold);
+  background:linear-gradient(135deg,#fffdf8,#fdf8ec);
+}
+.ach-card--earned::after {
+  content:'✓'; position:absolute; top:8px; right:10px;
+  width:20px; height:20px; border-radius:50%; background:var(--sage);
+  color:var(--white); font-size:0.65rem; display:flex; align-items:center;
+  justify-content:center; font-family:var(--font-mono);
+}
+.ach-card--locked { opacity:0.38; filter:grayscale(0.8); }
+.ach-icon { font-size:2.8rem; margin-bottom:12px; }
+.ach-title { font-family:var(--font-serif); font-size:1rem; margin-bottom:5px; }
+.ach-desc { font-size:0.73rem; color:var(--mist); line-height:1.5; }
+.ach-pts { font-family:var(--font-mono); font-size:0.68rem; color:var(--gold); margin-top:8px; }
+.ach-date { font-size:0.68rem; color:var(--sage); margin-top:3px; }
+</style>
+
+<script src="../js/main.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/avatar.js"></script>
+<script>
+if (!Auth.getToken()) window.location.href = 'login.html';
+
+let allAch = [], activeFilter = 'all';
+
+async function loadAchievements() {
+  try {
+    allAch = await apiFetch('/users/me/achievements');
+
+    const earned     = allAch.filter(a => a.earned);
+    const total      = allAch.length;
+    const earnedPct  = total ? Math.round(earned.length / total * 100) : 0;
+    const totalPts   = earned.reduce((s,a) => s + (a.points||0), 0);
+
+    document.getElementById('earnedCount').textContent = earned.length;
+    document.getElementById('progressLabel').textContent = `${earned.length}/${total}`;
+    document.getElementById('progressBar').style.width = earnedPct + '%';
+
+    const nextAch = allAch.find(a => !a.earned);
+    document.getElementById('progressHint').textContent =
+      `${totalPts} очков · ${nextAch ? 'Следующее: ' + nextAch.title : 'Все достижения получены! 🎉'}`;
+
+    document.getElementById('achLoading').style.display = 'none';
+    document.getElementById('achContent').style.display = 'block';
+
+    renderAch();
+  } catch(e) {
+    document.getElementById('achLoading').innerHTML =
+      `<p style="color:var(--rust)">Ошибка: ${e.message}</p>
+       <button onclick="loadAchievements()" class="btn btn--outline" style="margin-top:12px">↻ Повторить</button>`;
+  }
+}
+
+function renderAch() {
+  const grid = document.getElementById('achGrid');
+  const items = activeFilter === 'all'
+    ? allAch
+    : allAch.filter(a => a.category === activeFilter);
+
+  grid.innerHTML = items.map(a => `
+    <div class="ach-card ${a.earned ? 'ach-card--earned' : 'ach-card--locked'}">
+      <div class="ach-icon">${a.icon}</div>
+      <div class="ach-title">${a.title}</div>
+      <div class="ach-desc">${a.description||''}</div>
+      <div class="ach-pts">+${a.points||0} очков</div>
+      ${a.earned && a.earned_at ? `<div class="ach-date">Получено: ${new Date(a.earned_at).toLocaleDateString('ru',{day:'numeric',month:'short',year:'numeric'})}</div>` : ''}
+    </div>`).join('');
+}
+
+function filterAch(cat, btn) {
+  activeFilter = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAch();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.getToken()) { window.location.href = 'login.html'; return; }
+  await loadAchievements();
+});
+</script>
+</body>
+</html>

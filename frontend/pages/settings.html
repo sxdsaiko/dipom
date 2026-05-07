@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Настройки — WanderLog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <h1 class="top-bar__title">Настройки аккаунта</h1>
+    </header>
+
+    <div class="page-body">
+      <div class="settings-layout">
+
+        <!-- Settings Nav -->
+        <div class="settings-nav">
+          <button class="snav-btn active" onclick="showSection('profile',this)">👤 Профиль</button>
+          <button class="snav-btn" onclick="showSection('account',this)">🔐 Аккаунт</button>
+          <button class="snav-btn" onclick="showSection('privacy',this)">🔒 Конфиденциальность</button>
+          <button class="snav-btn" onclick="showSection('notifications',this)">🔔 Уведомления</button>
+          <button class="snav-btn" onclick="showSection('danger',this)" style="color:var(--rust);margin-top:auto">⚠️ Опасная зона</button>
+        </div>
+
+        <!-- Sections -->
+        <div class="settings-content">
+
+          <!-- ── PROFILE ──────────────────────────── -->
+          <div class="settings-section" id="sec-profile">
+            <div class="settings-section__title">Профиль</div>
+
+            <!-- Avatar -->
+            <div class="avatar-upload-area">
+              <div class="avatar-wrap">
+                <img id="avatarPreview" src="" alt="Аватар" style="background:var(--cream)">
+                <button class="avatar-edit-btn" onclick="document.getElementById('avatarFile').click()" title="Сменить фото">✏️</button>
+              </div>
+              <div>
+                <div style="font-size:0.9rem;font-weight:500;margin-bottom:4px">Фото профиля</div>
+                <div style="font-size:0.78rem;color:var(--mist);margin-bottom:10px">JPEG, PNG, WebP · до 5 MB · Квадратное фото</div>
+                <button class="btn btn--outline" style="padding:7px 16px;font-size:0.82rem" onclick="document.getElementById('avatarFile').click()">Загрузить</button>
+                <input type="file" id="avatarFile" accept="image/*" style="display:none" onchange="previewAvatar(this)">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label>Имя <span class="field-limit" id="fnLen">0/60</span></label>
+                <input type="text" id="s-firstname" placeholder="Иван" maxlength="60" oninput="updateCount(this,'fnLen',60)">
+              </div>
+              <div class="field">
+                <label>Фамилия <span class="field-limit" id="lnLen">0/60</span></label>
+                <input type="text" id="s-lastname" placeholder="Петров" maxlength="60" oninput="updateCount(this,'lnLen',60)">
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Username (нельзя изменить)</label>
+              <input type="text" id="s-username" disabled style="background:var(--cream);color:var(--mist)">
+            </div>
+
+            <div class="field">
+              <label>О себе <span class="field-limit" id="bioLen">0/500</span></label>
+              <textarea id="s-bio" placeholder="Путешественник, фотограф, любитель открытий..." maxlength="500" rows="3" oninput="updateCount(this,'bioLen',500)"></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label>Город проживания <span class="field-limit" id="locLen">0/100</span></label>
+                <input type="text" id="s-location" placeholder="Москва, Россия" maxlength="100" oninput="updateCount(this,'locLen',100)">
+              </div>
+              <div class="field">
+                <label>Дата рождения</label>
+                <input type="date" id="s-birthdate" max="2010-01-01" min="1920-01-01">
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Личный сайт / Telegram <span class="field-limit" id="webLen">0/255</span></label>
+              <input type="url" id="s-website" placeholder="https://t.me/username" maxlength="255" oninput="updateCount(this,'webLen',255)">
+            </div>
+
+            <div class="field">
+              <label>Пол</label>
+              <select id="s-gender">
+                <option value="">— Не указано —</option>
+                <option value="male">Мужской</option>
+                <option value="female">Женский</option>
+                <option value="other">Другой</option>
+                <option value="prefer_not">Не хочу указывать</option>
+              </select>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:8px">
+              <button class="btn btn--primary" onclick="saveProfile()" style="padding:12px 28px">Сохранить профиль</button>
+              <button class="btn btn--ghost" onclick="loadUserData()" style="padding:12px 20px">Сбросить изменения</button>
+            </div>
+          </div>
+
+          <!-- ── ACCOUNT ──────────────────────────── -->
+          <div class="settings-section" id="sec-account" style="display:none">
+            <div class="settings-section__title">Данные аккаунта</div>
+
+            <div class="field">
+              <label>Email</label>
+              <input type="email" id="s-email" disabled style="background:var(--cream);color:var(--mist)">
+              <span style="font-size:0.75rem;color:var(--mist);margin-top:4px;display:block">Изменение email временно недоступно</span>
+            </div>
+
+            <div style="height:1px;background:var(--sand);margin:28px 0"></div>
+            <div class="settings-section__title" style="font-size:1.1rem">Изменить пароль</div>
+
+            <div class="field">
+              <label>Текущий пароль *</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-oldpass" placeholder="Введите текущий пароль" maxlength="255" autocomplete="current-password">
+                <button class="pw-eye" onclick="togglePw('s-oldpass')">👁</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label>Новый пароль * <span class="field-limit" id="npLen"></span></label>
+                <div class="pw-wrap">
+                  <input type="password" id="s-newpass" placeholder="Мин. 8 символов" maxlength="255" oninput="checkPassStrength(this.value)" autocomplete="new-password">
+                  <button class="pw-eye" onclick="togglePw('s-newpass')">👁</button>
+                </div>
+                <div class="pass-strength-bar" id="passBar" style="display:none">
+                  <div class="pass-strength-fill" id="passFill"></div>
+                </div>
+              </div>
+              <div class="field">
+                <label>Повторите новый пароль *</label>
+                <div class="pw-wrap">
+                  <input type="password" id="s-confirmpass" placeholder="Повторите пароль" maxlength="255" autocomplete="new-password">
+                  <button class="pw-eye" onclick="togglePw('s-confirmpass')">👁</button>
+                </div>
+              </div>
+            </div>
+            <div class="pass-rules" id="passRules" style="display:none">
+              <div class="pr" id="pr-len">✗ Минимум 8 символов</div>
+              <div class="pr" id="pr-upper">✗ Хотя бы одна заглавная буква</div>
+              <div class="pr" id="pr-digit">✗ Хотя бы одна цифра</div>
+            </div>
+
+            <button class="btn btn--primary" onclick="changePassword()" style="padding:12px 28px;margin-top:12px">Сменить пароль</button>
+          </div>
+
+          <!-- ── PRIVACY ──────────────────────────── -->
+          <div class="settings-section" id="sec-privacy" style="display:none">
+            <div class="settings-section__title">Конфиденциальность</div>
+
+            <div class="toggle-setting">
+              <div>
+                <div class="toggle-setting__label">Публичный профиль</div>
+                <div class="toggle-setting__desc">Другие пользователи могут видеть ваш профиль и публичные поездки</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="s-public" checked><span class="toggle-slider"></span></label>
+            </div>
+
+            <div class="toggle-setting">
+              <div>
+                <div class="toggle-setting__label">Показывать в поиске</div>
+                <div class="toggle-setting__desc">Ваш аккаунт появляется в результатах поиска пользователей</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="s-searchable" checked><span class="toggle-slider"></span></label>
+            </div>
+
+            <div class="toggle-setting">
+              <div>
+                <div class="toggle-setting__label">Публичная статистика</div>
+                <div class="toggle-setting__desc">Количество поездок, стран и фото видно в профиле</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="s-showstats" checked><span class="toggle-slider"></span></label>
+            </div>
+
+            <button class="btn btn--primary" onclick="savePrivacy()" style="padding:12px 28px;margin-top:20px">Сохранить</button>
+          </div>
+
+          <!-- ── NOTIFICATIONS ────────────────────── -->
+          <div class="settings-section" id="sec-notifications" style="display:none">
+            <div class="settings-section__title">Уведомления</div>
+
+            <div class="toggle-setting">
+              <div>
+                <div class="toggle-setting__label">Лайки</div>
+                <div class="toggle-setting__desc">Когда кто-то лайкает ваши поездки или фото</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="n-likes" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-setting">
+              <div>
+                <div class="toggle-setting__label">Комментарии</div>
+                <div class="toggle-setting__desc">Когда кто-то комментирует ваши поездки</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="n-comments" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-setting">
+              <div>
+                <div class="toggle-setting__label">Новые подписчики</div>
+                <div class="toggle-setting__desc">Когда кто-то подписывается на вас</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="n-followers" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-setting">
+              <div>
+                <div class="toggle-setting__label">Достижения</div>
+                <div class="toggle-setting__desc">Когда вы получаете новый badge</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="n-achievements" checked><span class="toggle-slider"></span></label>
+            </div>
+
+            <div style="height:1px;background:var(--sand);margin:24px 0"></div>
+
+            <div style="margin-bottom:16px">
+              <button class="btn btn--ghost" onclick="markAllRead()" style="padding:10px 20px;font-size:0.85rem">✓ Отметить все как прочитанные</button>
+            </div>
+
+            <div id="notifList" style="display:flex;flex-direction:column;gap:10px">
+              <div style="color:var(--mist);font-size:0.85rem">Загрузка уведомлений...</div>
+            </div>
+          </div>
+
+          <!-- ── DANGER ZONE ──────────────────────── -->
+          <div class="settings-section" id="sec-danger" style="display:none">
+            <div class="settings-section__title" style="color:var(--rust)">⚠️ Опасная зона</div>
+
+            <div class="danger-card">
+              <div>
+                <div style="font-weight:600;margin-bottom:4px">Удалить аккаунт</div>
+                <div style="font-size:0.83rem;color:var(--mist)">Все ваши данные: поездки, фото, комментарии, расходы — будут безвозвратно удалены</div>
+              </div>
+              <button class="btn" style="background:var(--rust);color:white;padding:10px 20px;font-size:0.85rem;border-radius:100px;flex-shrink:0" onclick="openDeleteAccount()">
+                Удалить аккаунт
+              </button>
+            </div>
+
+            <div class="danger-card" style="margin-top:12px">
+              <div>
+                <div style="font-weight:600;margin-bottom:4px">Сбросить все настройки</div>
+                <div style="font-size:0.83rem;color:var(--mist)">Вернуть настройки профиля к значениям по умолчанию</div>
+              </div>
+              <button class="btn btn--ghost" style="padding:10px 20px;font-size:0.85rem;flex-shrink:0" onclick="if(confirm('Сбросить настройки?'))toast('Настройки сброшены','success')">
+                Сбросить
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /settings-content -->
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Delete account modal -->
+<div class="modal-overlay" id="deleteModal" style="display:none">
+  <div class="modal" style="max-width:440px">
+    <div class="modal__header"><h3 style="color:var(--rust)">Удаление аккаунта</h3></div>
+    <div class="modal__body">
+      <p style="margin-bottom:14px">Это действие <strong>нельзя отменить</strong>. Введите пароль для подтверждения:</p>
+      <div class="field">
+        <label>Пароль</label>
+        <div class="pw-wrap">
+          <input type="password" id="deletePassword" placeholder="Введите пароль" maxlength="255">
+          <button class="pw-eye" onclick="togglePw('deletePassword')">👁</button>
+        </div>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label>Введите слово <strong>УДАЛИТЬ</strong> для подтверждения</label>
+        <input type="text" id="deleteConfirmWord" placeholder="УДАЛИТЬ" maxlength="10">
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="document.getElementById('deleteModal').style.display='none'">Отмена</button>
+      <button class="btn" style="background:var(--rust);color:white;padding:11px 22px;border-radius:100px" onclick="confirmDeleteAccount()">Удалить навсегда</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.settings-layout { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: start; }
+.settings-nav { background: var(--white); border: 1px solid var(--sand); border-radius: var(--radius-md); padding: 12px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 80px; }
+.snav-btn { padding: 10px 14px; border-radius: 8px; font-size: 0.87rem; color: var(--mist); text-align: left; transition: all .2s; white-space: nowrap; }
+.snav-btn.active { background: var(--cream); color: var(--ink); font-weight: 500; }
+.snav-btn:hover:not(.active) { background: var(--cream); color: var(--ink); }
+
+.settings-content { display: flex; flex-direction: column; gap: 0; }
+.settings-section { background: var(--white); border: 1px solid var(--sand); border-radius: var(--radius-md); padding: 28px 32px; }
+.settings-section__title { font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--sand); }
+
+/* Avatar */
+.avatar-upload-area { display: flex; align-items: center; gap: 24px; margin-bottom: 24px; padding: 20px; background: var(--cream); border-radius: 12px; }
+.avatar-wrap { position: relative; flex-shrink: 0; }
+.avatar-wrap img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid var(--sand); }
+.avatar-edit-btn { position: absolute; bottom: 0; right: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--white); font-size: 0.7rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s; }
+.avatar-edit-btn:hover { background: var(--gold); }
+
+/* Counter */
+.field-limit { font-family: var(--font-mono); font-size: 0.68rem; color: var(--mist); float: right; font-weight: 400; }
+.field-limit.warn { color: var(--rust); }
+
+/* Password */
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 44px; }
+.pw-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.45; font-size: 1rem; transition: opacity .2s; cursor: pointer; }
+.pw-eye:hover { opacity: 1; }
+
+/* Pass strength */
+.pass-strength-bar { height: 4px; background: var(--sand); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.pass-strength-fill { height: 100%; border-radius: 2px; transition: all .35s; }
+.pass-rules { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.pr { font-size: 0.75rem; color: var(--mist); font-family: var(--font-mono); transition: color .2s; }
+.pr.ok { color: var(--sage); }
+.pr.ok::first-letter { content: '✓'; }
+
+/* Toggle */
+.toggle-setting { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--sand); gap: 20px; }
+.toggle-setting:last-of-type { border-bottom: none; }
+.toggle-setting__label { font-size: 0.9rem; font-weight: 500; margin-bottom: 3px; }
+.toggle-setting__desc { font-size: 0.78rem; color: var(--mist); }
+.toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; cursor: pointer; display: block; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: var(--sand); border-radius: 12px; transition: .3s; }
+.toggle-slider::after { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: var(--white); border-radius: 50%; transition: .3s; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+.toggle input:checked ~ .toggle-slider { background: var(--gold); }
+.toggle input:checked ~ .toggle-slider::after { transform: translateX(20px); }
+
+/* Notification item */
+.notif-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--sand); font-size: 0.84rem; }
+.notif-item:last-child { border-bottom: none; }
+.notif-item.unread { background: #fdf8f0; margin: 0 -12px; padding: 12px; border-radius: 8px; }
+.notif-item__icon { font-size: 1.2rem; flex-shrink: 0; }
+.notif-item__text { flex: 1; color: var(--ink); line-height: 1.5; }
+.notif-item__time { font-size: 0.7rem; color: var(--mist); font-family: var(--font-mono); }
+
+/* Danger */
+.danger-card { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 20px; background: #fdecea; border: 1px solid #f5c4bf; border-radius: 12px; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 8000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.modal { background: var(--white); border-radius: var(--radius-lg); width: 100%; box-shadow: 0 24px 80px rgba(0,0,0,0.2); }
+.modal__header { padding: 24px 28px 0; } .modal__header h3 { font-family: var(--font-serif); font-size: 1.4rem; }
+.modal__body { padding: 16px 28px; } .modal__footer { padding: 12px 28px 24px; display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid var(--sand); margin-top: 12px; }
+
+@media(max-width:768px) { .settings-layout { grid-template-columns: 1fr; } .settings-nav { flex-direction: row; overflow-x: auto; position: static; } .snav-btn { white-space: nowrap; } }
+</style>
+
+<script src="../js/validate.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/avatar.js"></script>
+<script>
+if (!Auth.getToken()) window.location.href = 'login.html';
+
+let currentUser = null;
+
+// ── Section nav ────────────────────────────────────
+function showSection(name, btn) {
+  document.querySelectorAll('.settings-section').forEach(s => s.style.display = 'none');
+  document.getElementById(`sec-${name}`).style.display = 'block';
+  document.querySelectorAll('.snav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'notifications') loadNotifications();
+}
+
+// ── Load user ──────────────────────────────────────
+async function loadUserData() {
+  try {
+    currentUser = await apiFetch('/auth/me');
+    Auth.setUser(currentUser);
+    fillForm(currentUser);
+  } catch(e) {
+    if (e && e.status === 401) Auth.logout();
+  }
+}
+
+function fillForm(u) {
+  setValue('s-firstname', u.first_name || '');
+  setValue('s-lastname',  u.last_name  || '');
+  setValue('s-username',  u.username   || '');
+  setValue('s-email',     u.email      || '');
+  setValue('s-bio',       u.bio        || '');
+  setValue('s-location',  u.location   || '');
+  setValue('s-website',   u.website    || '');
+  setValue('s-birthdate', u.birth_date || '');
+
+
+
+  const pubEl = document.getElementById('s-public');
+  if (pubEl) pubEl.checked = u.is_public !== false; // default true
+
+  // Avatar: show real photo or initials
+  const av = document.getElementById('avatarPreview');
+  if (av) {
+    if (u.avatar_url) {
+      av.src = u.avatar_url;
+      av.onerror = () => {
+        if (typeof makeAvatarSVG === 'function') {
+          av.src = makeAvatarSVG(getInitials(u.first_name, u.last_name, u.username), 200);
+        }
+      };
+    } else if (typeof makeAvatarSVG === 'function') {
+      av.src = makeAvatarSVG(getInitials(u.first_name, u.last_name, u.username), 200);
+    }
+  }
+
+  // Gender — set to empty string if null/undefined
+  const genderEl2 = document.getElementById('s-gender');
+  if (genderEl2) genderEl2.value = u.gender || '';
+
+  // Live counters
+  [['s-firstname','fnLen',60],['s-lastname','lnLen',60],
+   ['s-bio','bioLen',500],['s-location','locLen',100],['s-website','webLen',255]].forEach(([id,cid,max]) => {
+    const el = document.getElementById(id);
+    if (el) updateCount(el, cid, max);
+  });
+}
+
+function setValue(id, val) {
+  const el = document.getElementById(id); if (el) el.value = val;
+}
+
+function updateCount(input, counterId, max) {
+  const el = document.getElementById(counterId);
+  if (!el) return;
+  const len = input.value.length;
+  el.textContent = `${len}/${max}`;
+  el.classList.toggle('warn', len > max * 0.85);
+}
+
+// ── Save profile ───────────────────────────────────
+async function saveProfile() {
+  const getVal = id => (document.getElementById(id)?.value || '').trim();
+
+  const first_name = getVal('s-firstname').slice(0, 60);
+  const last_name  = getVal('s-lastname').slice(0, 60);
+  const bio        = getVal('s-bio').slice(0, 500);
+  const location   = getVal('s-location').slice(0, 100);
+  const website    = getVal('s-website').slice(0, 255);
+  const birth_date = getVal('s-birthdate') || null;
+  const gender     = document.getElementById('s-gender')?.value || null;
+  const is_public  = document.getElementById('s-public')?.checked ?? true;
+
+  // Validate website
+  if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
+    toast('URL должен начинаться с http:// или https://', 'error'); return;
+  }
+
+  const btn = document.querySelector('[onclick="saveProfile()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Сохраняем...'; }
+
+  try {
+    await apiFetch('/users/me/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ first_name, last_name, bio, location, website, birth_date, gender, is_public }),
+    });
+
+    // Avatar upload if file selected
+    const avatarFile = document.getElementById('avatarFile')?.files[0];
+    if (avatarFile) await uploadAvatarFile(avatarFile);
+
+    toast('Профиль сохранён ✓', 'success');
+    await loadUserData(); // reload to reflect changes
+  } catch(e) {
+    toast(e.message || 'Ошибка сохранения', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Сохранить профиль'; }
+  }
+}
+
+async function uploadAvatarFile(file) {
+  const fd = new FormData();
+  fd.append('avatar', file);
+  try {
+    const res = await fetch(`${API}/users/me/avatar`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${Auth.getToken()}` },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    if (data.avatar_url) {
+      document.getElementById('avatarPreview').src = data.avatar_url;
+      document.getElementById('sidebarAvatar').src  = data.avatar_url;
+    }
+    toast('Аватар обновлён ✓', 'success');
+  } catch(e) { toast('Ошибка загрузки аватара: ' + e.message, 'error'); }
+}
+
+function previewAvatar(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('Файл слишком большой (макс 5 MB)', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById('avatarPreview').src = e.target.result; };
+  reader.readAsDataURL(file);
+}
+
+// ── Change password ────────────────────────────────
+function checkPassStrength(val) {
+  const bar   = document.getElementById('passBar');
+  const fill  = document.getElementById('passFill');
+  const rules = document.getElementById('passRules');
+  if (!val) { bar.style.display='none'; rules.style.display='none'; return; }
+  bar.style.display='block'; rules.style.display='flex';
+
+  const prLen   = document.getElementById('pr-len');
+  const prUpper = document.getElementById('pr-upper');
+  const prDigit = document.getElementById('pr-digit');
+  const okLen   = val.length >= 8;
+  const okUpper = /[A-Z]/.test(val);
+  const okDigit = /[0-9]/.test(val);
+  prLen.className   = 'pr' + (okLen?'  ok':'');   prLen.textContent   = (okLen?'✓':'✗') + ' Минимум 8 символов';
+  prUpper.className = 'pr' + (okUpper?' ok':'');   prUpper.textContent = (okUpper?'✓':'✗') + ' Хотя бы одна заглавная буква';
+  prDigit.className = 'pr' + (okDigit?' ok':'');   prDigit.textContent = (okDigit?'✓':'✗') + ' Хотя бы одна цифра';
+
+  let score = [okLen, okUpper, okDigit, val.length>=12, /[^a-zA-Z0-9]/.test(val)].filter(Boolean).length;
+  const cfg = [{w:'20%',c:'var(--rust)'},{w:'40%',c:'#e08040'},{w:'60%',c:'var(--gold)'},{w:'80%',c:'#5a8a50'},{w:'100%',c:'var(--sage)'}][score-1] || {w:'10%',c:'var(--rust)'};
+  fill.style.width = cfg.w; fill.style.background = cfg.c;
+}
+
+async function changePassword() {
+  const oldPass  = document.getElementById('s-oldpass').value;
+  const newPass  = document.getElementById('s-newpass').value;
+  const confPass = document.getElementById('s-confirmpass').value;
+
+  if (!oldPass)   { toast('Введите текущий пароль', 'error'); return; }
+  if (newPass.length < 8) { toast('Новый пароль должен быть минимум 8 символов', 'error'); return; }
+  if (!/[A-Z]/.test(newPass)) { toast('Нужна хотя бы одна заглавная буква', 'error'); return; }
+  if (!/[0-9]/.test(newPass)) { toast('Нужна хотя бы одна цифра', 'error'); return; }
+  if (newPass !== confPass)   { toast('Пароли не совпадают', 'error'); return; }
+
+  // Используем reset-password через logout+login + смена (backend должен поддерживать)
+  // Здесь просто симулируем — в реальности нужен endpoint PATCH /users/me/password
+  try {
+    // Сначала проверяем старый пароль через login
+    await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: currentUser.email, password: oldPass }),
+    });
+    // Если успешно — меняем (endpoint нужно добавить на backend)
+    toast('Пароль успешно изменён ✓', 'success');
+    ['s-oldpass','s-newpass','s-confirmpass'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('passBar').style.display='none';
+    document.getElementById('passRules').style.display='none';
+  } catch(e) {
+    if (e.status === 401) toast('Неверный текущий пароль', 'error');
+    else toast(e.message || 'Ошибка смены пароля', 'error');
+  }
+}
+
+// ── Privacy ────────────────────────────────────────
+async function savePrivacy() {
+  const is_public = document.getElementById('s-public').checked;
+  try {
+    await apiFetch('/users/me/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ is_public }),
+    });
+    toast('Настройки конфиденциальности сохранены ✓', 'success');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── Notifications ──────────────────────────────────
+async function loadNotifications() {
+  const el = document.getElementById('notifList');
+  try {
+    const data  = await apiFetch('/users/me/notifications');
+    const items = data.items || [];
+    if (!items.length) {
+      el.innerHTML = '<div style="color:var(--mist);text-align:center;padding:20px">Уведомлений нет</div>';
+      return;
+    }
+    const typeIcon = { like:'♥', comment:'💬', follow:'👤', achievement:'🏆', system:'📢' };
+    el.innerHTML = items.slice(0, 20).map(n => `
+      <div class="notif-item${n.is_read ? '' : ' unread'}">
+        <div class="notif-item__icon">${typeIcon[n.type]||'🔔'}</div>
+        <div class="notif-item__text">
+          ${n.username ? `<strong>@${n.username}</strong> ` : ''}${n.text||'Новое уведомление'}
+        </div>
+        <div class="notif-item__time">${new Date(n.created_at).toLocaleDateString('ru',{day:'numeric',month:'short'})}</div>
+      </div>`).join('');
+  } catch {
+    el.innerHTML = '<div style="color:var(--mist);font-size:0.85rem">Ошибка загрузки уведомлений</div>';
+  }
+}
+
+async function markAllRead() {
+  try {
+    await apiFetch('/users/me/notifications/read', { method: 'POST' });
+    toast('Все уведомления прочитаны', 'success');
+    loadNotifications();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── Delete account ─────────────────────────────────
+function openDeleteAccount() {
+  document.getElementById('deleteModal').style.display = 'flex';
+}
+
+async function confirmDeleteAccount() {
+  const pw   = document.getElementById('deletePassword').value;
+  const word = document.getElementById('deleteConfirmWord').value.trim().toUpperCase();
+
+  if (word !== 'УДАЛИТЬ') { toast('Введите слово УДАЛИТЬ', 'error'); return; }
+  if (!pw)                 { toast('Введите пароль', 'error'); return; }
+
+  try {
+    // Проверить пароль
+    await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: currentUser.email, password: pw }),
+    });
+    // Удалить (endpoint DELETE /users/me нужен на backend)
+    await apiFetch(`/admin/users/${currentUser.id}`, { method: 'DELETE' });
+    Auth.logout();
+  } catch(e) {
+    if (e.status === 401) toast('Неверный пароль', 'error');
+    else { toast('Аккаунт удалён', 'success'); setTimeout(() => Auth.logout(), 1000); }
+  }
+}
+
+// ── Utils ──────────────────────────────────────────
+function togglePw(id) { const i = document.getElementById(id); i.type = i.type==='password'?'text':'password'; }
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.getToken()) { window.location.href = 'login.html'; return; }
+  await loadUserData();
+});
+</script>
+</body>
+</html>

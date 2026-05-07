@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Моя карта — WanderLog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <style>
+    body { overflow: hidden; }
+    .map-wrapper { position: fixed; inset: 0; left: 260px; }
+    #mainMap { width: 100%; height: 100%; }
+
+    .map-panel {
+      position: absolute; top: 20px; left: 20px; z-index: 1000;
+      background: rgba(250,248,244,0.97); backdrop-filter: blur(20px);
+      border: 1px solid var(--sand); border-radius: var(--radius-md);
+      min-width: 250px; box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+      overflow: hidden;
+    }
+    .map-panel__head {
+      padding: 16px 20px; background: var(--ink); color: var(--white);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .map-panel__title { font-family: var(--font-serif); font-size: 1.05rem; }
+    .map-panel__body { padding: 16px 20px; }
+
+    .map-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.84rem; }
+    .map-stat strong { font-family: var(--font-serif); font-size: 1.4rem; color: var(--gold); }
+
+    .layer-toggle { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 0.83rem; cursor: pointer; user-select: none; }
+    .layer-toggle input { accent-color: var(--gold); width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
+    .layer-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    .map-search { display: flex; margin-bottom: 14px; }
+    .map-search input {
+      flex: 1; padding: 8px 12px; border: 1.5px solid var(--sand);
+      border-radius: 8px 0 0 8px; font-family: var(--font-sans); font-size: 0.83rem;
+      outline: none; border-right: none; background: var(--white);
+    }
+    .map-search input:focus { border-color: var(--gold); }
+    .map-search button { padding: 8px 14px; background: var(--ink); color: var(--white); border-radius: 0 8px 8px 0; font-size: 0.82rem; transition: background .2s; }
+    .map-search button:hover { background: var(--slate); }
+
+    .country-card {
+      position: absolute; bottom: 30px; right: 20px; z-index: 1000;
+      background: rgba(250,248,244,0.97); backdrop-filter: blur(20px);
+      border: 1px solid var(--sand); border-radius: var(--radius-md);
+      width: 290px; overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.16);
+      display: none; animation: slideUp 0.3s var(--ease-expo) both;
+    }
+    @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    .country-card.visible { display: block; }
+    .country-card__header { padding: 16px 18px; background: var(--slate); color: var(--white); display: flex; align-items: center; gap: 12px; position: relative; }
+    .country-card__close { position: absolute; top: 10px; right: 12px; color: rgba(255,255,255,0.5); font-size: 1.1rem; cursor: pointer; transition: color .2s; }
+    .country-card__close:hover { color: var(--white); }
+    .country-card__flag { font-size: 2.2rem; line-height: 1; }
+    .country-card__name { font-family: var(--font-serif); font-size: 1.2rem; }
+    .country-card__sub { font-size: 0.72rem; opacity: 0.6; margin-top: 2px; }
+    .country-card__body { padding: 14px 18px; }
+    .country-card__stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+    .ccs { background: var(--cream); border-radius: 8px; padding: 8px 6px; text-align: center; }
+    .ccs strong { display: block; font-family: var(--font-serif); font-size: 1.2rem; color: var(--ink); }
+    .ccs span { font-size: 0.65rem; color: var(--mist); text-transform: uppercase; letter-spacing: 0.07em; }
+
+    .theme-toggle { display: flex; gap: 4px; }
+    .theme-btn { padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.7rem; font-family: var(--font-mono); color: rgba(255,255,255,0.7); transition: all .2s; }
+    .theme-btn.active { background: rgba(255,255,255,0.15); color: var(--white); border-color: rgba(255,255,255,0.4); }
+
+    .loading-overlay {
+      position: absolute; inset: 0; background: var(--ink); z-index: 2000;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--white);
+      transition: opacity .5s;
+    }
+    .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    @media(max-width:768px) { .map-wrapper { left: 0; } .map-panel { min-width: 200px; } }
+  </style>
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <div class="map-wrapper">
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:var(--gold);width:40px;height:40px;border-width:3px"></div>
+      <p style="font-family:var(--font-mono);font-size:0.8rem;letter-spacing:0.1em;opacity:0.7">Загружаем ваши путешествия...</p>
+    </div>
+
+    <div id="mainMap"></div>
+
+    <!-- Control panel -->
+    <div class="map-panel">
+      <div class="map-panel__head">
+        <span class="map-panel__title">🌍 Моя карта</span>
+        <div class="theme-toggle">
+          <button class="theme-btn active" onclick="setTheme('dark',this)">Тёмная</button>
+          <button class="theme-btn" onclick="setTheme('light',this)">Светлая</button>
+        </div>
+      </div>
+      <div class="map-panel__body">
+        <div class="map-search">
+          <input type="text" id="mapSearch" placeholder="Найти страну..." maxlength="100" onkeydown="if(event.key==='Enter')searchCountry()">
+          <button onclick="searchCountry()">→</button>
+        </div>
+
+        <div class="map-stat"><span>Посещено стран</span><strong id="statCountries">—</strong></div>
+        <div class="map-stat"><span>Завершено поездок</span><strong id="statTrips">—</strong></div>
+        <div class="map-stat"><span>Запланировано</span><strong id="statPlanned">—</strong></div>
+
+        <div style="height:1px;background:var(--sand);margin:12px 0"></div>
+
+        <p style="font-family:var(--font-mono);font-size:0.67rem;color:var(--mist);margin-bottom:10px;letter-spacing:0.1em;text-transform:uppercase">Слои</p>
+        <label class="layer-toggle">
+          <input type="checkbox" id="layerVisited" checked onchange="toggleLayer('visited',this.checked)">
+          <span class="layer-dot" style="background:#4a6741"></span> Посещённые страны
+        </label>
+        <label class="layer-toggle">
+          <input type="checkbox" id="layerPlanned" checked onchange="toggleLayer('planned',this.checked)">
+          <span class="layer-dot" style="background:#c9a96e"></span> Запланированные
+        </label>
+        <label class="layer-toggle">
+          <input type="checkbox" id="layerWishlist" onchange="toggleLayer('wishlist',this.checked)">
+          <span class="layer-dot" style="background:#8fa3b1"></span> Вишлист
+        </label>
+        <label class="layer-toggle">
+          <input type="checkbox" id="layerRoutes" checked onchange="toggleLayer('routes',this.checked)">
+          <span class="layer-dot" style="background:#9b4e2e"></span> Маршруты
+        </label>
+
+        <div style="height:1px;background:var(--sand);margin:12px 0"></div>
+        <a href="trip-new.html" class="btn btn--primary" style="width:100%;padding:10px;font-size:0.82rem;text-align:center;justify-content:center;display:flex">+ Добавить поездку</a>
+      </div>
+    </div>
+
+    <!-- Country info card -->
+    <div class="country-card" id="countryCard">
+      <button class="country-card__close" onclick="closeCard()">✕</button>
+      <div class="country-card__header">
+        <span class="country-card__flag" id="cardFlag"></span>
+        <div>
+          <div class="country-card__name" id="cardName"></div>
+          <div class="country-card__sub" id="cardSub"></div>
+        </div>
+      </div>
+      <div class="country-card__body">
+        <div class="country-card__stats">
+          <div class="ccs"><strong id="cardTrips">0</strong><span>поездок</span></div>
+          <div class="ccs"><strong id="cardDays">0</strong><span>дней</span></div>
+          <div class="ccs"><strong id="cardPhotos">0</strong><span>фото</span></div>
+        </div>
+        <div id="cardTripsList" style="margin-bottom:12px"></div>
+        <a class="btn btn--outline" href="trips.html" style="width:100%;justify-content:center;display:flex;padding:9px;font-size:0.82rem">Смотреть поездки →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../js/validate.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/avatar.js"></script>
+<script>
+if (!Auth.getToken()) window.location.href = 'login.html';
+
+let map, tileLayer;
+const layers = {};
+
+// Координаты стран по ISO2
+const ISO_COORDS = {
+  RU:[55.75,37.61],FR:[48.85,2.35],IT:[41.90,12.49],ES:[40.41,-3.70],DE:[52.52,13.40],
+  TR:[39.93,32.85],TH:[13.75,100.50],JP:[35.67,139.65],AE:[23.42,53.84],GR:[37.98,23.72],
+  CZ:[50.07,14.43],HU:[47.49,19.04],ID:[-6.20,106.84],PT:[38.72,-9.13],EG:[30.04,31.23],
+  CN:[39.90,116.40],US:[38.89,-77.03],GE:[41.71,44.82],ME:[42.43,19.25],AM:[40.17,44.50],
+  GB:[51.50,-0.12],PL:[52.23,21.01],NL:[52.37,4.89],SE:[59.33,18.06],NO:[59.91,10.74],
+  AT:[48.20,16.37],CH:[46.94,7.44],BE:[50.85,4.35],DK:[55.67,12.56],FI:[60.16,24.93],
+  SK:[48.14,17.10],SI:[46.05,14.50],HR:[45.81,15.97],RS:[44.80,20.46],BG:[42.69,23.32],
+  RO:[44.43,26.09],UA:[50.45,30.52],BY:[53.90,27.56],KZ:[51.18,71.44],UZ:[41.29,69.27],
+  AZ:[40.40,49.86],TM:[37.95,58.38],KG:[42.87,74.59],TJ:[38.55,68.77],
+  VN:[21.02,105.83],KH:[11.56,104.91],LA:[17.96,102.60],MY:[3.14,101.68],
+  MM:[16.86,96.19],PH:[14.59,120.97],SG:[1.35,103.81],BN:[-4.89,114.94],
+  IN:[28.63,77.21],PK:[33.72,73.04],BD:[23.72,90.40],LK:[6.92,79.86],NP:[27.71,85.32],
+  BT:[27.46,89.63],MV:[4.17,73.50],AF:[34.52,69.17],IR:[35.69,51.39],IQ:[33.34,44.40],
+  SA:[24.68,46.72],YE:[15.36,44.20],OM:[23.61,58.59],KW:[29.36,47.97],QA:[25.28,51.53],
+  BH:[26.21,50.58],JO:[31.95,35.93],LB:[33.88,35.50],SY:[33.51,36.29],IL:[31.78,35.22],
+  MA:[33.99,-6.85],DZ:[36.73,3.08],TN:[36.81,10.18],LY:[32.90,13.18],SD:[15.56,32.53],
+  ET:[9.02,38.74],KE:[-1.28,36.82],TZ:[-6.18,35.74],UG:[0.32,32.58],RW:[-1.94,29.87],
+  ZA:[-25.74,28.19],MZ:[-25.96,32.59],ZM:[-15.41,28.28],ZW:[-17.82,31.05],
+  NG:[9.07,7.39],GH:[5.55,-0.20],SN:[14.69,-17.44],CI:[5.35,-4.00],CM:[3.86,11.52],
+  CD:[-4.32,15.32],CF:[4.36,18.55],SL:[8.47,-13.23],LR:[6.30,-10.80],GN:[9.54,-13.67],
+  MG:[-18.91,47.53],MU:[-20.16,57.49],SC:[-4.67,55.46],
+  AU:[-35.30,149.12],NZ:[-41.28,174.77],FJ:[-18.14,178.44],PG:[-9.44,147.18],
+  BR:[-15.77,-47.93],AR:[-34.61,-58.37],CL:[-33.45,-70.66],CO:[4.71,-74.07],
+  VE:[10.48,-66.89],PE:[-12.04,-77.04],BO:[-16.50,-68.15],PY:[-25.28,-57.64],
+  UY:[-34.90,-56.19],EC:[-0.22,-78.51],GY:[6.80,-58.15],SR:[5.85,-55.20],
+  MX:[19.43,-99.13],CA:[45.42,-75.70],CU:[23.13,-82.38],JM:[18.00,-76.80],
+  DO:[18.47,-69.89],HT:[18.54,-72.33],PR:[18.46,-66.11],
+};
+
+const TILES = {
+  dark:  'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+  light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+};
+
+// Данные загруженные с сервера
+let userTripsData   = []; // все поездки пользователя
+let visitedCountries = {}; // iso2 -> { trips, days, photos, flag, name }
+let plannedCountries = {}; // iso2 -> info
+let wishlistItems    = [];
+
+function makeMarker(color, size = 14) {
+  return L.divIcon({
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 2px 10px ${color}99;transition:transform .15s" onmouseover="this.style.transform='scale(1.4)'" onmouseout="this.style.transform='scale(1)'"></div>`,
+    className: '', iconAnchor: [size/2, size/2],
+  });
+}
+
+function initMap() {
+  map = L.map('mainMap', { zoomControl: false, attributionControl: false }).setView([25, 15], 2);
+  tileLayer = L.tileLayer(TILES.dark).addTo(map);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  map.on('click', closeCard);
+}
+
+async function loadUserData() {
+  try {
+    // 1. Загружаем поездки пользователя
+    userTripsData = await apiFetch('/trips/my');
+
+    // 2. Статистика
+    const stats = await apiFetch('/users/me/stats');
+    document.getElementById('statCountries').textContent = stats.countries?.length ?? 0;
+    const totals = stats.totals || {};
+    document.getElementById('statTrips').textContent   = totals.completed ?? 0;
+    document.getElementById('statPlanned').textContent = totals.planned   ?? 0;
+
+    // 3. Построить карту посещённых стран из поездок
+    userTripsData.forEach(trip => {
+      if (trip.status === 'completed' && trip.country_id) {
+        const iso = trip.iso2 || getIsoFromId(trip.country_id);
+        if (!iso) return;
+        if (!visitedCountries[iso]) {
+          visitedCountries[iso] = {
+            iso2:   iso,
+            flag:   trip.flag_emoji || '',
+            name:   trip.country_name || iso,
+            trips:  [],
+            days:   0,
+            photos: 0,
+          };
+        }
+        visitedCountries[iso].trips.push(trip);
+        visitedCountries[iso].photos += trip.photo_count || 0;
+      }
+      if (trip.status === 'planned' && trip.country_id) {
+        const iso = trip.iso2 || getIsoFromId(trip.country_id);
+        if (!iso) return;
+        if (!plannedCountries[iso]) {
+          plannedCountries[iso] = { iso2: iso, flag: trip.flag_emoji || '', name: trip.country_name || iso, trips: [] };
+        }
+        plannedCountries[iso].trips.push(trip);
+      }
+    });
+
+    // 4. Также берём страны из stats.countries (посещённые)
+    if (stats.countries) {
+      stats.countries.forEach(c => {
+        if (!visitedCountries[c.iso2]) {
+          visitedCountries[c.iso2] = { iso2: c.iso2, flag: c.flag_emoji || '', name: c.name_ru || c.iso2, trips: [], days: 0, photos: 0 };
+        }
+      });
+    }
+
+    // 5. Wishlist
+    try {
+      wishlistItems = await apiFetch('/users/me/wishlist');
+    } catch {}
+
+    buildMapLayers();
+
+  } catch(err) {
+    console.error('Map data error:', err);
+  }
+
+  // Скрыть лоадинг
+  const ov = document.getElementById('loadingOverlay');
+  ov.classList.add('hidden');
+  setTimeout(() => ov.remove(), 600);
+}
+
+// Временная карта id->iso (из наших известных стран)
+const ID_TO_ISO = {1:'RU',2:'FR',3:'IT',4:'ES',5:'DE',6:'TR',7:'TH',8:'JP',9:'AE',10:'GR',
+  11:'CZ',12:'HU',13:'ID',14:'PT',15:'EG',16:'CN',17:'US',18:'GE',19:'ME',20:'AM'};
+function getIsoFromId(id) { return ID_TO_ISO[id] || null; }
+
+function buildMapLayers() {
+  // Очистить старые слои
+  Object.values(layers).forEach(l => { if (l && map.hasLayer(l)) map.removeLayer(l); });
+
+  // ── Посещённые ──────────────────────────────────
+  const visitedMarkers = [];
+  Object.values(visitedCountries).forEach(c => {
+    const coords = ISO_COORDS[c.iso2];
+    if (!coords) return;
+    const m = L.marker(coords, { icon: makeMarker('#4a6741', 16) })
+      .on('click', (e) => { L.DomEvent.stopPropagation(e); showCard(c, 'visited'); });
+    visitedMarkers.push(m);
+  });
+  layers.visited = L.layerGroup(visitedMarkers).addTo(map);
+
+  // ── Запланированные ─────────────────────────────
+  const plannedMarkers = [];
+  Object.values(plannedCountries).forEach(c => {
+    const coords = ISO_COORDS[c.iso2];
+    if (!coords) return;
+    const m = L.marker(coords, { icon: makeMarker('#c9a96e', 14) })
+      .on('click', (e) => { L.DomEvent.stopPropagation(e); showCard(c, 'planned'); });
+    plannedMarkers.push(m);
+  });
+  layers.planned = L.layerGroup(plannedMarkers).addTo(map);
+
+  // ── Вишлист ─────────────────────────────────────
+  const wishMarkers = [];
+  wishlistItems.forEach(w => {
+    if (!w.country_id) return;
+    const iso = ID_TO_ISO[w.country_id];
+    const coords = iso ? ISO_COORDS[iso] : null;
+    if (!coords) return;
+    // Смещаем немного чтобы не перекрывать
+    const offset = [coords[0] + (Math.random()-0.5)*2, coords[1] + (Math.random()-0.5)*2];
+    const m = L.marker(offset, { icon: makeMarker('#8fa3b1', 12) })
+      .bindTooltip(`💫 ${w.title}`, { direction:'top' });
+    wishMarkers.push(m);
+  });
+  layers.wishlist = L.layerGroup(wishMarkers); // не добавляем по умолчанию
+
+  // ── Маршруты (между посещёнными странами) ───────
+  const routeLines = [];
+  const visitedList = Object.values(visitedCountries).filter(c => ISO_COORDS[c.iso2]);
+  // Строим линии из хронологии поездок
+  const sortedTrips = userTripsData
+    .filter(t => t.status === 'completed' && t.iso2 && ISO_COORDS[t.iso2])
+    .sort((a,b) => new Date(a.start_date) - new Date(b.start_date));
+
+  for (let i = 0; i < sortedTrips.length - 1; i++) {
+    const a = ISO_COORDS[sortedTrips[i].iso2];
+    const b = ISO_COORDS[sortedTrips[i+1].iso2];
+    if (a && b && (a[0] !== b[0] || a[1] !== b[1])) {
+      const line = L.polyline([a, b], { color:'#9b4e2e', weight:1.5, opacity:0.6, dashArray:'5 5' });
+      routeLines.push(line);
+    }
+  }
+  layers.routes = L.layerGroup(routeLines).addTo(map);
+
+  // Если есть посещённые страны — центрируем карту
+  if (visitedList.length > 0) {
+    const coords = visitedList.map(c => ISO_COORDS[c.iso2]).filter(Boolean);
+    if (coords.length === 1) {
+      map.setView(coords[0], 4);
+    } else if (coords.length > 1) {
+      map.fitBounds(L.latLngBounds(coords), { padding: [60, 60] });
+    }
+  }
+}
+
+function showCard(data, type) {
+  document.getElementById('cardFlag').textContent = data.flag || '🌍';
+  document.getElementById('cardName').textContent = data.name || data.iso2;
+  document.getElementById('cardSub').textContent  = type === 'visited' ? '✅ Посещено' : type === 'planned' ? '📅 Запланировано' : '💫 Вишлист';
+  document.getElementById('cardTrips').textContent  = (data.trips?.length) || 0;
+  document.getElementById('cardDays').textContent   = data.days || '—';
+  document.getElementById('cardPhotos').textContent = data.photos || 0;
+
+  const listEl = document.getElementById('cardTripsList');
+  if (data.trips?.length) {
+    listEl.innerHTML = data.trips.slice(0,3).map(t =>
+      `<div style="font-size:0.8rem;padding:5px 0;border-bottom:1px solid var(--sand);cursor:pointer;color:var(--gold)" onclick="location.href='trip.html?id=${t.id}'">${t.title} →</div>`
+    ).join('');
+  } else { listEl.innerHTML = ''; }
+
+  document.getElementById('countryCard').classList.add('visible');
+}
+
+function closeCard() { document.getElementById('countryCard').classList.remove('visible'); }
+
+function toggleLayer(name, show) {
+  if (!layers[name]) return;
+  show ? map.addLayer(layers[name]) : map.removeLayer(layers[name]);
+}
+
+function setTheme(theme, btn) {
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  map.removeLayer(tileLayer);
+  tileLayer = L.tileLayer(TILES[theme]).addTo(map);
+}
+
+function searchCountry() {
+  const q = document.getElementById('mapSearch').value.trim().toLowerCase();
+  if (!q) return;
+  const all = [...Object.values(visitedCountries), ...Object.values(plannedCountries)];
+  const found = all.find(c => c.name.toLowerCase().includes(q) || c.iso2.toLowerCase() === q);
+  if (found && ISO_COORDS[found.iso2]) {
+    map.flyTo(ISO_COORDS[found.iso2], 5, { duration: 1.5 });
+    showCard(found, visitedCountries[found.iso2] ? 'visited' : 'planned');
+  } else {
+    toast('Страна не найдена в ваших путешествиях', 'error');
+  }
+}
+
+// Sidebar user
+async function loadSidebarUser() {
+  try {
+    const u = await apiFetch('/auth/me');
+    const el = document.getElementById('userName'); if(el) el.textContent = u.first_name || u.username;
+    const av = document.getElementById('userAvatar'); if(av && u.avatar_url) av.src = u.avatar_url;
+  } catch {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof initPage === 'function') initPage('map');
+  initMap();
+  loadUserData();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Планировщик — WanderLog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <h1 class="top-bar__title">Планировщик</h1>
+      <div class="top-bar__actions">
+        <a href="trip-new.html" class="btn btn--primary" style="padding:10px 20px;font-size:0.85rem">+ Создать поездку</a>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <div class="planner-tabs">
+        <button class="planner-tab active" onclick="switchTab('wishlist',this)">🌍 Вишлист</button>
+        <button class="planner-tab" onclick="switchTab('checklists',this)">☑️ Чек-листы</button>
+        <button class="planner-tab" onclick="switchTab('upcoming',this)">📅 Предстоящие</button>
+      </div>
+
+      <!-- ── WISHLIST ────────────────────────────── -->
+      <div id="tab-wishlist">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <p style="color:var(--mist);font-size:0.88rem">Места и страны, которые хочу посетить</p>
+          <button class="btn btn--outline" style="padding:9px 20px;font-size:0.85rem" onclick="openWishModal()">+ Добавить место</button>
+        </div>
+        <div id="wishlistLoading" style="text-align:center;padding:40px;color:var(--mist)">
+          <div class="spinner" style="margin:0 auto 12px"></div><p>Загрузка...</p>
+        </div>
+        <div id="wishlistEmpty" style="display:none;text-align:center;padding:60px 20px;color:var(--mist)">
+          <div style="font-size:3rem;margin-bottom:14px">🗺️</div>
+          <h3 style="font-family:var(--font-serif);font-size:1.4rem;margin-bottom:8px;color:var(--ink)">Вишлист пуст</h3>
+          <p style="margin-bottom:20px">Добавьте места, которые хотите посетить</p>
+          <button onclick="openWishModal()" class="btn btn--primary">+ Добавить первое место</button>
+        </div>
+        <div class="wishlist-grid" id="wishlistGrid"></div>
+      </div>
+
+      <!-- ── CHECKLISTS ──────────────────────────── -->
+      <div id="tab-checklists" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <p style="color:var(--mist);font-size:0.88rem">Чек-листы для подготовки к поездкам</p>
+          <button class="btn btn--outline" style="padding:9px 20px;font-size:0.85rem" onclick="createChecklist()">+ Новый список</button>
+        </div>
+        <div id="checklistsLoading" style="text-align:center;padding:40px;color:var(--mist)">
+          <div class="spinner" style="margin:0 auto 12px"></div><p>Загрузка...</p>
+        </div>
+        <div id="checklistsEmpty" style="display:none;text-align:center;padding:60px 20px;color:var(--mist)">
+          <div style="font-size:3rem;margin-bottom:14px">☑️</div>
+          <h3 style="font-family:var(--font-serif);font-size:1.4rem;margin-bottom:8px;color:var(--ink)">Нет чек-листов</h3>
+          <p style="margin-bottom:20px">Создайте список для подготовки к поездке</p>
+          <button onclick="createChecklist()" class="btn btn--primary">+ Создать список</button>
+        </div>
+        <div class="checklists-grid" id="checklistsGrid"></div>
+      </div>
+
+      <!-- ── UPCOMING ────────────────────────────── -->
+      <div id="tab-upcoming" style="display:none">
+        <div id="upcomingLoading" style="text-align:center;padding:40px;color:var(--mist)">
+          <div class="spinner" style="margin:0 auto 12px"></div><p>Загрузка...</p>
+        </div>
+        <div id="upcomingEmpty" style="display:none;text-align:center;padding:60px 20px;color:var(--mist)">
+          <div style="font-size:3rem;margin-bottom:14px">✈️</div>
+          <h3 style="font-family:var(--font-serif);font-size:1.4rem;margin-bottom:8px;color:var(--ink)">Нет запланированных поездок</h3>
+          <p style="margin-bottom:20px">Создайте свою первую поездку</p>
+          <a href="trip-new.html" class="btn btn--primary">+ Создать поездку</a>
+        </div>
+        <div class="upcoming-grid" id="upcomingGrid"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Wish modal -->
+<div class="modal-overlay" id="wishModal" style="display:none">
+  <div class="modal" style="max-width:500px">
+    <div class="modal__header">
+      <h3>Добавить место в вишлист</h3>
+      <button onclick="closeWishModal()" style="font-size:1.3rem;color:var(--mist);cursor:pointer">✕</button>
+    </div>
+    <div class="modal__body">
+      <div class="field">
+        <label>Название <span style="color:var(--rust)">*</span></label>
+        <input type="text" id="wish-title" placeholder="Бали, Токио, Марокко..." maxlength="255">
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Страна</label>
+          <select id="wish-country"><option value="">— Выбрать —</option></select>
+        </div>
+        <div class="field">
+          <label>Приоритет</label>
+          <select id="wish-priority">
+            <option value="dream">🌟 Мечта жизни</option>
+            <option value="high">🔴 Высокий</option>
+            <option value="medium" selected>🟡 Средний</option>
+            <option value="low">🟢 Низкий</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Планируемый год</label>
+          <input type="number" id="wish-year" placeholder="2025" min="2024" max="2035"
+                 oninput="this.value=this.value.replace(/\D/g,'').slice(0,4);if(this.value>2035)this.value=2035">
+        </div>
+        <div class="field">
+          <label>Бюджет (₽)</label>
+          <input type="number" id="wish-budget" placeholder="150000" min="0" max="999999999"
+                 oninput="if(parseFloat(this.value)>999999999)this.value=999999999">
+        </div>
+      </div>
+      <div class="field">
+        <label>Заметка</label>
+        <textarea id="wish-desc" placeholder="Почему хочу сюда? Что посмотреть?..." maxlength="500" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeWishModal()">Отмена</button>
+      <button class="btn btn--primary" onclick="saveWish()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.planner-tabs { display:flex; gap:4px; background:var(--cream); border-radius:12px; padding:4px; margin-bottom:28px; width:fit-content; }
+.planner-tab { padding:9px 22px; border-radius:9px; font-size:0.87rem; color:var(--mist); transition:all .25s; white-space:nowrap; cursor:pointer; }
+.planner-tab.active { background:var(--white); color:var(--ink); box-shadow:0 2px 8px rgba(0,0,0,0.08); font-weight:500; }
+.wishlist-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:18px; }
+.wish-card { background:var(--white); border-radius:var(--radius-md); border:1px solid var(--sand); overflow:hidden; transition:transform .3s var(--ease-expo),box-shadow .3s; }
+.wish-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(0,0,0,0.09); }
+.wish-card__color { height:100px; display:flex; align-items:center; justify-content:center; font-size:3rem; position:relative; }
+.wish-card__priority { position:absolute; top:8px; right:8px; padding:3px 10px; border-radius:100px; font-family:var(--font-mono); font-size:0.65rem; backdrop-filter:blur(6px); }
+.wish-card__body { padding:16px; }
+.wish-card__title { font-family:var(--font-serif); font-size:1.1rem; margin-bottom:5px; }
+.wish-card__meta { font-size:0.74rem; color:var(--mist); font-family:var(--font-mono); margin-bottom:8px; }
+.wish-card__desc { font-size:0.82rem; color:var(--ink-60); margin-bottom:12px; line-height:1.6; }
+.wish-card__footer { display:flex; justify-content:space-between; align-items:center; }
+.wish-card__budget { font-size:0.78rem; color:var(--gold); font-family:var(--font-mono); }
+.wish-card__del { font-size:0.75rem; color:var(--mist); cursor:pointer; transition:color .2s; }
+.wish-card__del:hover { color:var(--rust); }
+.checklists-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:18px; }
+.checklist-card { background:var(--white); border-radius:var(--radius-md); border:1px solid var(--sand); padding:22px; }
+.checklist-card__header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.checklist-card__title { font-family:var(--font-serif); font-size:1.05rem; }
+.cl-progress { height:4px; background:var(--sand); border-radius:2px; margin-bottom:14px; overflow:hidden; }
+.cl-progress-fill { height:100%; background:var(--gold); border-radius:2px; transition:width .4s; }
+.cl-item { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--cream); font-size:0.87rem; }
+.cl-item:last-child { border:none; }
+.cl-item input[type=checkbox] { accent-color:var(--gold); width:15px; height:15px; flex-shrink:0; cursor:pointer; }
+.cl-item label { flex:1; cursor:pointer; transition:all .2s; }
+.cl-item input:checked+label { text-decoration:line-through; color:var(--mist); }
+.upcoming-grid { display:flex; flex-direction:column; gap:14px; }
+.upcoming-card { background:var(--white); border:1px solid var(--sand); border-radius:var(--radius-md); padding:20px 24px; display:grid; grid-template-columns:80px 1fr 100px; gap:20px; align-items:center; transition:transform .2s; cursor:pointer; }
+.upcoming-card:hover { transform:translateX(4px); }
+.upcoming-card__days { font-family:var(--font-serif); font-size:2.4rem; color:var(--gold); line-height:1; text-align:center; }
+.upcoming-card__label { font-size:0.62rem; color:var(--mist); text-transform:uppercase; letter-spacing:0.08em; text-align:center; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:8000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.modal { background:var(--white); border-radius:var(--radius-lg); width:100%; box-shadow:0 24px 80px rgba(0,0,0,0.2); }
+.modal__header { padding:24px 28px 0; display:flex; justify-content:space-between; align-items:center; }
+.modal__header h3 { font-family:var(--font-serif); font-size:1.3rem; }
+.modal__body { padding:16px 28px; }
+.modal__footer { padding:12px 28px 24px; display:flex; gap:10px; justify-content:flex-end; border-top:1px solid var(--sand); margin-top:12px; }
+</style>
+
+<script src="../js/main.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/avatar.js"></script>
+<script>
+if (!Auth.getToken()) window.location.href = 'login.html';
+
+// ── Tab switch ─────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display='none');
+  document.getElementById(`tab-${name}`).style.display='block';
+  document.querySelectorAll('.planner-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'wishlist')   loadWishlist();
+  if (name === 'checklists') loadChecklists();
+  if (name === 'upcoming')   loadUpcoming();
+}
+
+// ══ WISHLIST ════════════════════════════════════════
+const PRIORITY_LABELS = { dream:'🌟 Мечта', high:'🔴 Высокий', medium:'🟡 Средний', low:'🟢 Низкий' };
+const PRIORITY_COLORS = { dream:'rgba(201,169,110,0.15)', high:'rgba(155,78,46,0.12)', medium:'rgba(44,58,71,0.08)', low:'rgba(74,103,65,0.1)' };
+const COUNTRY_FLAGS = { '':'🌍', '1':'🇷🇺','2':'🇫🇷','3':'🇮🇹','4':'🇪🇸','5':'🇩🇪','6':'🇹🇷','7':'🇹🇭','8':'🇯🇵','9':'🇦🇪','10':'🇬🇷','13':'🇮🇩','17':'🇺🇸','18':'🇬🇪' };
+
+async function loadWishlist() {
+  const loading = document.getElementById('wishlistLoading');
+  const empty   = document.getElementById('wishlistEmpty');
+  const grid    = document.getElementById('wishlistGrid');
+  loading.style.display = 'block'; empty.style.display='none'; grid.innerHTML='';
+
+  try {
+    const items = await apiFetch('/users/me/wishlist');
+    loading.style.display = 'none';
+    if (!items.length) { empty.style.display='block'; return; }
+
+    grid.innerHTML = items.map(w => {
+      const flag = w.flag_emoji || COUNTRY_FLAGS[w.country_id] || '🌍';
+      const bgColor = PRIORITY_COLORS[w.priority] || 'rgba(44,58,71,0.08)';
+      return `
+        <div class="wish-card">
+          <div class="wish-card__color" style="background:${bgColor}">
+            <span>${flag}</span>
+            <span class="wish-card__priority" style="background:rgba(255,255,255,0.7);color:var(--ink)">${PRIORITY_LABELS[w.priority]||w.priority}</span>
+          </div>
+          <div class="wish-card__body">
+            <div class="wish-card__title">${w.title}</div>
+            <div class="wish-card__meta">${w.country_name||''} ${w.planned_at?'· '+(w.planned_at.slice?w.planned_at.slice(0,4):w.planned_at):''}</div>
+            ${w.description?`<div class="wish-card__desc">${w.description}</div>`:''}
+            <div class="wish-card__footer">
+              <span class="wish-card__budget">${w.budget_est?'~'+Number(w.budget_est).toLocaleString('ru')+' ₽':''}</span>
+              <div style="display:flex;gap:10px">
+                <button class="wish-card__del" onclick="planWish(${w.id},'${w.title.replace(/'/g,"\\'")}')">✈ В поездку</button>
+                <button class="wish-card__del" onclick="deleteWish(${w.id})">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    loading.style.display='none';
+    grid.innerHTML = `<p style="color:var(--rust)">${e.message}</p>`;
+  }
+}
+
+function openWishModal() {
+  document.getElementById('wishModal').style.display='flex';
+  loadWishCountries();
+}
+function closeWishModal() {
+  document.getElementById('wishModal').style.display='none';
+  ['wish-title','wish-year','wish-budget','wish-desc'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+async function loadWishCountries() {
+  const sel = document.getElementById('wish-country');
+  if (sel.options.length > 1) return;
+  try {
+    const countries = await apiFetch('/countries');
+    countries.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id; o.textContent = `${c.flag_emoji||''} ${c.name}`;
+      sel.appendChild(o);
+    });
+  } catch {}
+}
+
+async function saveWish() {
+  const title = document.getElementById('wish-title').value.trim();
+  if (!title) { toast('Введите название', 'error'); return; }
+  const year = document.getElementById('wish-year').value;
+  if (year && (year.length > 4 || parseInt(year) < 2024 || parseInt(year) > 2035)) {
+    toast('Год: от 2024 до 2035', 'error'); return;
+  }
+  try {
+    await apiFetch('/users/me/wishlist', {
+      method: 'POST',
+      body: JSON.stringify({
+        title,
+        country_id:  document.getElementById('wish-country').value || null,
+        priority:    document.getElementById('wish-priority').value,
+        planned_at:  year ? `${year}-01-01` : null,
+        budget_est:  document.getElementById('wish-budget').value || null,
+        description: document.getElementById('wish-desc').value.trim() || null,
+        currency: 'RUB',
+      }),
+    });
+    closeWishModal();
+    toast('Добавлено в вишлист ✓', 'success');
+    loadWishlist();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deleteWish(id) {
+  if (!confirm('Удалить из вишлиста?')) return;
+  try {
+    await apiFetch(`/users/me/wishlist/${id}`, { method:'DELETE' });
+    toast('Удалено', 'success');
+    loadWishlist();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function planWish(id, title) {
+  toast(`Переходим к созданию поездки «${title}»...`, 'success');
+  setTimeout(() => { window.location.href = `trip-new.html`; }, 700);
+}
+
+// ══ CHECKLISTS ═══════════════════════════════════════
+let checklistsData = [];
+
+async function loadChecklists() {
+  const loading = document.getElementById('checklistsLoading');
+  const empty   = document.getElementById('checklistsEmpty');
+  const grid    = document.getElementById('checklistsGrid');
+  loading.style.display='block'; empty.style.display='none'; grid.innerHTML='';
+
+  try {
+    const data = await apiFetch('/users/me/checklists').catch(() => null);
+    loading.style.display='none';
+
+    // API чек-листов может не быть — работаем локально с localStorage
+    const saved = localStorage.getItem(`wl_checklists_${Auth.getUser()?.id}`);
+    checklistsData = saved ? JSON.parse(saved) : [];
+
+    if (!checklistsData.length) { empty.style.display='block'; return; }
+    renderChecklists();
+  } catch {
+    loading.style.display='none';
+    empty.style.display='block';
+  }
+}
+
+function saveChecklistsLocal() {
+  localStorage.setItem(`wl_checklists_${Auth.getUser()?.id}`, JSON.stringify(checklistsData));
+}
+
+function renderChecklists() {
+  const grid  = document.getElementById('checklistsGrid');
+  const empty = document.getElementById('checklistsEmpty');
+  if (!checklistsData.length) { empty.style.display='block'; grid.innerHTML=''; return; }
+  empty.style.display='none';
+  grid.innerHTML = checklistsData.map((cl, ci) => {
+    const done = cl.items.filter(i=>i.done).length;
+    const pct  = cl.items.length ? Math.round(done/cl.items.length*100) : 0;
+    return `
+      <div class="checklist-card">
+        <div class="checklist-card__header">
+          <span class="checklist-card__title">${cl.title}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:var(--font-mono);font-size:0.7rem;color:var(--gold)">${done}/${cl.items.length}</span>
+            <button onclick="deleteChecklist(${ci})" style="font-size:0.8rem;color:var(--mist);cursor:pointer" title="Удалить список">✕</button>
+          </div>
+        </div>
+        <div class="cl-progress"><div class="cl-progress-fill" style="width:${pct}%"></div></div>
+        ${cl.items.map((item,ii)=>`
+          <div class="cl-item">
+            <input type="checkbox" id="cl-${ci}-${ii}" ${item.done?'checked':''} onchange="toggleItem(${ci},${ii},this)">
+            <label for="cl-${ci}-${ii}">${item.text}</label>
+            <button onclick="removeItem(${ci},${ii})" style="font-size:0.75rem;color:var(--mist);opacity:0.5;cursor:pointer">✕</button>
+          </div>`).join('')}
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn--ghost" style="flex:1;padding:7px;font-size:0.8rem" onclick="addItemPrompt(${ci})">+ Пункт</button>
+          <button class="btn btn--ghost" style="padding:7px 12px;font-size:0.78rem;color:var(--rust)" onclick="clearDone(${ci})">Очистить выполненные</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function createChecklist() {
+  const title = prompt('Название чек-листа:');
+  if (!title?.trim()) return;
+  checklistsData.push({ title: title.trim().slice(0,255), items:[] });
+  saveChecklistsLocal();
+  renderChecklists();
+  document.getElementById('checklistsEmpty').style.display='none';
+}
+
+function toggleItem(ci, ii, cb) {
+  checklistsData[ci].items[ii].done = cb.checked;
+  saveChecklistsLocal();
+  renderChecklists();
+}
+
+function addItemPrompt(ci) {
+  const text = prompt('Новый пункт:');
+  if (!text?.trim()) return;
+  checklistsData[ci].items.push({ text: text.trim().slice(0,200), done:false });
+  saveChecklistsLocal();
+  renderChecklists();
+}
+
+function removeItem(ci, ii) {
+  checklistsData[ci].items.splice(ii, 1);
+  saveChecklistsLocal();
+  renderChecklists();
+}
+
+function clearDone(ci) {
+  checklistsData[ci].items = checklistsData[ci].items.filter(i=>!i.done);
+  saveChecklistsLocal();
+  renderChecklists();
+}
+
+function deleteChecklist(ci) {
+  if (!confirm('Удалить список?')) return;
+  checklistsData.splice(ci, 1);
+  saveChecklistsLocal();
+  renderChecklists();
+}
+
+// ══ UPCOMING ══════════════════════════════════════════
+async function loadUpcoming() {
+  const loading = document.getElementById('upcomingLoading');
+  const empty   = document.getElementById('upcomingEmpty');
+  const grid    = document.getElementById('upcomingGrid');
+  loading.style.display='block'; empty.style.display='none'; grid.innerHTML='';
+
+  try {
+    const trips = await apiFetch('/trips/my');
+    const planned = trips
+      .filter(t => t.status === 'planned')
+      .sort((a,b) => new Date(a.start_date||'9999') - new Date(b.start_date||'9999'));
+
+    loading.style.display='none';
+    if (!planned.length) { empty.style.display='block'; return; }
+
+    grid.innerHTML = planned.map(t => {
+      const days = t.start_date ? Math.max(0, Math.ceil((new Date(t.start_date)-new Date())/86400000)) : null;
+      const dateStr = t.start_date ? new Date(t.start_date).toLocaleDateString('ru',{day:'numeric',month:'long',year:'numeric'}) : 'Дата не указана';
+      return `
+        <div class="upcoming-card" onclick="location.href='trip.html?id=${t.id}'">
+          <div>
+            ${days!==null
+              ?`<div class="upcoming-card__days">${days}</div><div class="upcoming-card__label">дней</div>`
+              :`<div style="font-size:2rem;text-align:center">📅</div>`}
+          </div>
+          <div>
+            <div style="font-family:var(--font-serif);font-size:1.15rem;margin-bottom:5px">${t.flag_emoji||''} ${t.title}</div>
+            <div style="font-size:0.78rem;color:var(--mist);font-family:var(--font-mono)">${t.country_name||''} ${t.country_name?'·':''} ${dateStr}</div>
+            ${t.total_budget?`<div style="font-size:0.78rem;color:var(--gold);margin-top:4px;font-family:var(--font-mono)">Бюджет: ${Number(t.total_budget).toLocaleString('ru')} ${t.currency||'₽'}</div>`:''}
+          </div>
+          <div style="text-align:right">
+            <span class="badge badge--yellow" style="font-size:0.68rem">Запланировано</span>
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    loading.style.display='none';
+    grid.innerHTML = `<p style="color:var(--rust);text-align:center;padding:20px">${e.message}</p>`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.getToken()) { window.location.href = 'login.html'; return; }
+  loadWishlist();
+});
+</script>
+</body>
+</html>
