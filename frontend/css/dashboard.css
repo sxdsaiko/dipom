@@ -1,0 +1,50 @@
+/* ── Dashboard extra styles ──────────────────────── */
+.notif-bell {
+  font-size: 1.2rem; cursor: pointer; position: relative;
+  padding: 6px; border-radius: 8px; transition: background 0.2s;
+}
+.notif-bell:hover { background: var(--cream); }
+.notif-count {
+  position: absolute; top: 0; right: 0;
+  background: var(--rust); color: var(--white);
+  font-size: 0.6rem; font-family: var(--font-mono);
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Recent trip row */
+.trip-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0; border-bottom: 1px solid var(--sand);
+  cursor: pointer; transition: background 0.2s;
+  border-radius: 8px; margin: 0 -8px; padding: 14px 8px;
+}
+.trip-row:last-child { border-bottom: none; }
+.trip-row:hover { background: var(--cream); }
+.trip-row__thumb { width: 60px; height: 50px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.trip-row__info { flex: 1; min-width: 0; }
+.trip-row__title { font-family: var(--font-serif); font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trip-row__meta { font-size: 0.75rem; color: var(--mist); margin-top: 3px; font-family: var(--font-mono); }
+.trip-row__status { flex-shrink: 0; }
+
+/* Achievements mini */
+.dash-achievements { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.dash-badge {
+  background: var(--cream); border-radius: 10px; padding: 12px 8px;
+  text-align: center; border: 1px solid var(--sand);
+  position: relative;
+}
+.dash-badge--earned { border-color: var(--gold); background: #fdf8f0; }
+.dash-badge--locked { opacity: 0.35; filter: grayscale(0.8); }
+.dash-badge__icon { font-size: 1.6rem; }
+.dash-badge__title { font-size: 0.6rem; color: var(--mist); margin-top: 4px; line-height: 1.2; }
+
+/* Sidebar toggle mobile */
+.sidebar-toggle {
+  background: var(--cream); border: 1px solid var(--sand);
+  padding: 6px 12px; border-radius: 8px;
+  font-size: 1.1rem;
+}
+@media (max-width: 768px) {
+  .sidebar-toggle { display: block !important; }
+}
