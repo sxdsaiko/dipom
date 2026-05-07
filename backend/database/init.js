@@ -4,27 +4,27 @@ const mysql = require('mysql2/promise');
 
 async function initDatabase() {
     try {
-        const connection = await mysql.createConnection(process.env.DATABASE_URL);
+        const connection = await mysql.createConnection({
+            host: process.env.MYSQLHOST,
+            port: process.env.MYSQLPORT,
+            user: process.env.MYSQLUSER,
+            password: process.env.MYSQLPASSWORD,
+            database: process.env.MYSQLDATABASE,
+            multipleStatements: true
+        });
 
-        console.log('Connected to MySQL');
+        console.log('✅ Connected to MySQL');
 
         const schemaPath = path.join(__dirname, 'schema.sql');
         const schema = fs.readFileSync(schemaPath, 'utf8');
 
-        const queries = schema
-            .split(';')
-            .map(q => q.trim())
-            .filter(q => q.length);
+        await connection.query(schema);
 
-        for (const query of queries) {
-            await connection.query(query);
-        }
-
-        console.log('Database initialized successfully');
+        console.log('✅ Database initialized');
 
         await connection.end();
-    } catch (error) {
-        console.error('DB init error:', error);
+    } catch (err) {
+        console.error('❌ DB init error:', err);
         process.exit(1);
     }
 }
