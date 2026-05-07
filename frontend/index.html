@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WanderLog — Дневник путешествий</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<!-- ═══ CURSOR ══════════════════════════════════════ -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- ═══ NAV ═════════════════════════════════════════ -->
+<nav class="nav" id="nav">
+  <a href="index.html" class="nav__logo">
+    <span class="nav__logo-icon">◈</span>
+    <span>WanderLog</span>
+  </a>
+  <ul class="nav__links">
+    <li><a href="#discover">Открытия</a></li>
+    <li><a href="#features">Возможности</a></li>
+    <li><a href="#explore">Карта</a></li>
+    <li><a href="pages/gallery.html">Галерея</a></li>
+  </ul>
+  <div class="nav__actions">
+    <a href="pages/login.html" class="btn btn--ghost">Войти</a>
+    <a href="pages/register.html" class="btn btn--primary">Начать</a>
+  </div>
+  <button class="nav__burger" id="navBurger" aria-label="Меню">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ═══ HERO ═════════════════════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="hero__canvas-bg">
+    <canvas id="particleCanvas"></canvas>
+  </div>
+
+  <div class="hero__imagery">
+    <div class="hero__img hero__img--1" style="--i:0">
+      <img src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=500&q=80" alt="">
+    </div>
+    <div class="hero__img hero__img--2" style="--i:1">
+      <img src="https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=500&q=80" alt="">
+    </div>
+    <div class="hero__img hero__img--3" style="--i:2">
+      <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500&q=80" alt="">
+    </div>
+  </div>
+
+  <div class="hero__content">
+    <p class="hero__eyebrow">
+      <span class="eyebrow__line"></span>
+      Персональный дневник путешественника
+    </p>
+    <h1 class="hero__title">
+      Каждое путешествие —<br>
+      <em>история</em> на всю жизнь
+    </h1>
+    <p class="hero__sub">
+      Сохраняйте маршруты, фотографии, впечатления и расходы.<br>
+      Делитесь историями. Вдохновляйте других.
+    </p>
+    <div class="hero__cta">
+      <a href="pages/register.html" class="btn btn--hero">
+        Создать дневник
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <a href="#discover" class="btn btn--outline-hero">Смотреть путешествия</a>
+    </div>
+    <div class="hero__stats">
+      <div class="hero__stat">
+        <span class="hero__stat-num" data-target="12847">0</span>
+        <span class="hero__stat-label">Путешественников</span>
+      </div>
+      <div class="hero__stat">
+        <span class="hero__stat-num" data-target="89320">0</span>
+        <span class="hero__stat-label">Историй</span>
+      </div>
+      <div class="hero__stat">
+        <span class="hero__stat-num" data-target="142">0</span>
+        <span class="hero__stat-label">Стран</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero__scroll-hint">
+    <span>Прокрутите</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- ═══ MARQUEE ══════════════════════════════════════ -->
+<div class="marquee-strip">
+  <div class="marquee-track">
+    <span>🗺️ Создавайте маршруты</span>
+    <span>📸 Сохраняйте фото</span>
+    <span>✈️ Планируйте поездки</span>
+    <span>🌍 Исследуйте мир</span>
+    <span>💰 Считайте расходы</span>
+    <span>❤️ Делитесь историями</span>
+    <span>🏆 Собирайте достижения</span>
+    <span>🗺️ Создавайте маршруты</span>
+    <span>📸 Сохраняйте фото</span>
+    <span>✈️ Планируйте поездки</span>
+    <span>🌍 Исследуйте мир</span>
+    <span>💰 Считайте расходы</span>
+    <span>❤️ Делитесь историями</span>
+    <span>🏆 Собирайте достижения</span>
+  </div>
+</div>
+
+<!-- ═══ FEATURES ═════════════════════════════════════ -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Всё в одном месте</p>
+      <h2 class="section-title">Полный арсенал<br><em>путешественника</em></h2>
+    </div>
+    <div class="features__grid">
+      <div class="feature-card feature-card--large" data-reveal>
+        <div class="feature-card__icon">🗺️</div>
+        <h3>Интерактивная карта</h3>
+        <p>Визуализируйте все ваши путешествия на одной карте. Отмечайте посещённые страны, маршруты и места силы.</p>
+        <div class="feature-card__preview">
+          <div id="miniMap" class="mini-map"></div>
+        </div>
+      </div>
+      <div class="feature-card" data-reveal>
+        <div class="feature-card__icon">📖</div>
+        <h3>Дневник по дням</h3>
+        <p>Записывайте каждый день путешествия: впечатления, погоду, настроение, посещённые места.</p>
+        <div class="feature-card__badge">Богатый редактор</div>
+      </div>
+      <div class="feature-card" data-reveal>
+        <div class="feature-card__icon">💰</div>
+        <h3>Учёт расходов</h3>
+        <p>Контролируйте бюджет. Категории расходов, статистика, графики по поездке.</p>
+        <div class="feature-card__badge">Аналитика</div>
+      </div>
+      <div class="feature-card" data-reveal>
+        <div class="feature-card__icon">🏆</div>
+        <h3>Достижения</h3>
+        <p>Зарабатывайте travel-badges за milestone'ы: первое путешествие, 10 стран, 100 фото и многое другое.</p>
+        <div class="feature-card__badge">14 достижений</div>
+      </div>
+      <div class="feature-card" data-reveal>
+        <div class="feature-card__icon">📸</div>
+        <h3>Фотогалерея</h3>
+        <p>Загружайте фотографии в красивом masonry-макете. Альбомы по поездкам, лайки, комментарии.</p>
+      </div>
+      <div class="feature-card feature-card--accent" data-reveal>
+        <div class="feature-card__icon">✈️</div>
+        <h3>Планировщик</h3>
+        <p>Вишлист стран, чек-листы вещей, планы маршрутов — готовьтесь к поездке заранее и ничего не забудьте.</p>
+        <div class="feature-card__badge">Wishlist</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DISCOVER ══════════════════════════════════════ -->
+<section class="discover" id="discover">
+  <div class="container">
+    <div class="section-header section-header--flex">
+      <div>
+        <p class="section-eyebrow">Сообщество</p>
+        <h2 class="section-title">Истории<br><em>других</em></h2>
+      </div>
+      <div class="discover__filters">
+        <button class="filter-btn active" data-filter="all">Все</button>
+        <button class="filter-btn" data-filter="completed">Завершённые</button>
+        <button class="filter-btn" data-filter="planned">Планируемые</button>
+      </div>
+    </div>
+    <div class="trips-grid" id="tripsGrid">
+      <!-- JS rendered -->
+    </div>
+    <div class="discover__more">
+      <a href="pages/explore.html" class="btn btn--outline">Смотреть все истории</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MAP SECTION ───────────────────────────────── -->
+<section class="map-section" id="explore">
+  <div class="map-section__content">
+    <p class="section-eyebrow">Интерактивная карта</p>
+    <h2 class="section-title">Мир ждёт<br><em>вас</em></h2>
+    <p>Смотрите, куда путешествуют другие пользователи. Находите вдохновение для следующей поездки.</p>
+    <a href="pages/map.html" class="btn btn--primary">Открыть карту</a>
+  </div>
+  <div class="map-section__map">
+    <div id="worldMap" class="world-map"></div>
+    <div class="map-section__overlay"></div>
+  </div>
+</section>
+
+<!-- ═══ DESTINATIONS ─────────────────────────────── -->
+<section class="destinations">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Популярные направления</p>
+      <h2 class="section-title">Куда едут<br><em>прямо сейчас</em></h2>
+    </div>
+    <div class="dest-grid">
+      <div class="dest-card dest-card--big">
+        <img src="https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&q=80" alt="Франция">
+        <div class="dest-card__info">
+          <span class="dest-card__country">🇫🇷 Франция</span>
+          <h3>Париж</h3>
+          <span class="dest-card__count">2 341 история</span>
+        </div>
+      </div>
+      <div class="dest-card">
+        <img src="https://images.unsplash.com/photo-1542820969-a2155360d2b1?w=600&q=80" alt="Япония">
+        <div class="dest-card__info">
+          <span class="dest-card__country">🇯🇵 Япония</span>
+          <h3>Токио</h3>
+          <span class="dest-card__count">1 879 историй</span>
+        </div>
+      </div>
+      <div class="dest-card">
+        <img src="https://images.unsplash.com/photo-1583422409516-2895a77efded?w=600&q=80" alt="Италия">
+        <div class="dest-card__info">
+          <span class="dest-card__country">🇮🇹 Италия</span>
+          <h3>Рим</h3>
+          <span class="dest-card__count">1 654 истории</span>
+        </div>
+      </div>
+      <div class="dest-card">
+        <img src="https://images.unsplash.com/photo-1561501878-aabd62634533?w=600&q=80" alt="Таиланд">
+        <div class="dest-card__info">
+          <span class="dest-card__country">🇹🇭 Таиланд</span>
+          <h3>Бангкок</h3>
+          <span class="dest-card__count">1 423 истории</span>
+        </div>
+      </div>
+      <div class="dest-card">
+        <img src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&q=80" alt="Греция">
+        <div class="dest-card__info">
+          <span class="dest-card__country">🇬🇷 Греция</span>
+          <h3>Санторини</h3>
+          <span class="dest-card__count">987 историй</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TESTIMONIALS ─────────────────────────────── -->
+<section class="testimonials">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Отзывы</p>
+      <h2 class="section-title">Что говорят<br><em>путешественники</em></h2>
+    </div>
+    <div class="testimonials__grid">
+      <div class="testimonial-card" data-reveal>
+        <div class="testimonial-card__quote">"</div>
+        <p>WanderLog изменил то, как я путешествую. Теперь каждая поездка — это не просто воспоминание, а настоящая история, которую можно перечитать спустя годы.</p>
+        <div class="testimonial-card__author">
+          <img src="https://i.pravatar.cc/60?img=47" alt="Анна">
+          <div>
+            <strong>Анна Кириллова</strong>
+            <span>32 страны · 5 лет</span>
+          </div>
+        </div>
+        <div class="testimonial-card__stars">★★★★★</div>
+      </div>
+      <div class="testimonial-card" data-reveal>
+        <div class="testimonial-card__quote">"</div>
+        <p>Лучшее, что я установил перед первым solo-трипом. Учёт расходов и чек-листы спасли меня несколько раз. Приложение понятное и невероятно красивое.</p>
+        <div class="testimonial-card__author">
+          <img src="https://i.pravatar.cc/60?img=12" alt="Дмитрий">
+          <div>
+            <strong>Дмитрий Орлов</strong>
+            <span>18 стран · 2 года</span>
+          </div>
+        </div>
+        <div class="testimonial-card__stars">★★★★★</div>
+      </div>
+      <div class="testimonial-card" data-reveal>
+        <div class="testimonial-card__quote">"</div>
+        <p>Наконец-то нашла место, где все мои 400+ фотографий с путешествий организованы красиво и со смыслом. Интерактивная карта — отдельный восторг!</p>
+        <div class="testimonial-card__author">
+          <img src="https://i.pravatar.cc/60?img=25" alt="Мария">
+          <div>
+            <strong>Мария Соловьёва</strong>
+            <span>54 страны · 8 лет</span>
+          </div>
+        </div>
+        <div class="testimonial-card__stars">★★★★★</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CTA BANNER ────────────────────────────────── -->
+<section class="cta-banner">
+  <div class="cta-banner__bg">
+    <img src="https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1400&q=80" alt="">
+  </div>
+  <div class="cta-banner__content">
+    <h2>Ваше следующее путешествие<br>начинается <em>здесь</em></h2>
+    <p>Присоединяйтесь к 12 000+ путешественников и начните вести свой дневник бесплатно</p>
+    <a href="pages/register.html" class="btn btn--hero btn--large">
+      Создать бесплатно
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <a href="index.html" class="footer__logo">
+          <span class="nav__logo-icon">◈</span> WanderLog
+        </a>
+        <p>Цифровой дневник для тех, кто живёт путешествиями</p>
+        <div class="footer__social">
+          <a href="#" aria-label="Telegram">✈</a>
+          <a href="#" aria-label="Instagram">◎</a>
+          <a href="#" aria-label="VK">◈</a>
+        </div>
+      </div>
+      <div class="footer__cols">
+        <div class="footer__col">
+          <h4>Продукт</h4>
+          <ul>
+            <li><a href="pages/dashboard.html">Мой дневник</a></li>
+            <li><a href="pages/map.html">Карта мира</a></li>
+            <li><a href="pages/gallery.html">Галерея</a></li>
+            <li><a href="pages/planner.html">Планировщик</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <h4>Сообщество</h4>
+          <ul>
+            <li><a href="pages/explore.html">Лента историй</a></li>
+            <li><a href="#">Рейтинг</a></li>
+            <li><a href="#">Блог</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <h4>О проекте</h4>
+          <ul>
+            <li><a href="#">О нас</a></li>
+            <li><a href="#">Конфиденциальность</a></li>
+            <li><a href="#">Условия</a></li>
+            <li><a href="#">Контакты</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <p>© 2024 WanderLog. Дипломный проект. Сделано с ❤️ и страстью к путешествиям</p>
+      <p class="footer__tech">Node.js · Express · MySQL · Vanilla JS · Leaflet</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/main.js"></script>
+<script src="js/avatar.js"></script>
+</body>
+</html>
