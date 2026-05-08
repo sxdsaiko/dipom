@@ -250,10 +250,15 @@ async function doRegister() {
         last_name:  document.getElementById('reg-lastname').value.trim(),
       }),
     });
+    console.log('[register] server response:', data);
+    if (!data.accessToken) {
+      throw new Error('Сервер не вернул accessToken');
+    }
     Auth.setToken(data.accessToken);
     Auth.setUser(data.user);
+    console.log('[register] stored token:', Auth.getToken()?.slice(0, 20) + '...');
     showAlert('Аккаунт создан! Добро пожаловать в WanderLog 🎉', 'success');
-    setTimeout(() => { window.location = 'dashboard.html'; }, 1200);
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
   } catch(err) {
     showAlert(err.message || 'Ошибка регистрации', 'error');
     btn.disabled=false; spinner.style.display='none'; text.style.opacity='1';
