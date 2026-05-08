@@ -191,9 +191,14 @@ usersRouter.put('/me/profile', auth, async (req, res) => {
 // Upload avatar
 usersRouter.post('/me/avatar', auth, upl.single('avatar'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Файл не загружен' });
-  const result = await uploadAvatar(req.file.buffer);
-  await pool.query('UPDATE profiles SET avatar_url=? WHERE user_id=?', [result.secure_url, req.user.id]);
-  res.json({ avatar_url: result.secure_url });
+  try {
+    const result = await uploadAvatar(req.file.buffer);
+    await pool.query('UPDATE profiles SET avatar_url=? WHERE user_id=?', [result.secure_url, req.user.id]);
+    res.json({ avatar_url: result.secure_url });
+  } catch (err) {
+    console.error('Avatar upload error:', err);
+    res.status(500).json({ error: 'Ошибка загрузки аватара: ' + (err.message || err.http_code || 'unknown') });
+  }
 });
 
 // Follow / unfollow
