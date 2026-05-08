@@ -36,7 +36,8 @@ photosRouter.post('/trips/:tripId/photos', authenticate,
 
       res.status(201).json(uploaded);
     } catch (err) {
-      res.status(500).json({ error: 'Ошибка загрузки: ' + err.message });
+      console.error('Photo upload error:', err);
+      res.status(500).json({ error: 'Ошибка загрузки: ' + (err.message || err.http_code || 'unknown') });
     }
   }
 );
