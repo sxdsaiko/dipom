@@ -101,6 +101,55 @@ activity_log       -- Лог действий для аудита
 
 ---
 
+## 🚀 Деплой на Vercel + Railway
+
+### Frontend → Vercel (`dipom.vercel.app`)
+
+1. Импортируйте репозиторий в Vercel.
+2. В качестве **Root Directory** укажите `frontend`.
+3. Framework Preset: **Other**.
+4. Build Command: оставьте пустым.
+5. Output Directory: оставьте пустым.
+6. После деплоя домен фронтенда должен быть `https://dipom.vercel.app`.
+
+> Frontend уже настроен на production API `https://dipom-production.up.railway.app/api`, а локально использует `http://localhost:5000/api`.
+
+### Backend → Railway (`dipom-production.up.railway.app`)
+
+1. Создайте в Railway новый сервис из папки `backend`.
+2. Start Command: `npm start`.
+3. Подключите MySQL базу в Railway или внешнюю MySQL.
+4. Заполните переменные окружения по шаблону `backend/.env.example`.
+5. Обязательно задайте:
+   - `NODE_ENV=production`
+   - `FRONTEND_URL=https://dipom.vercel.app,https://www.dipom.vercel.app`
+   - `JWT_SECRET=<длинный случайный секрет>`
+   - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`
+   - `CLOUDINARY_CLOUD`, `CLOUDINARY_KEY`, `CLOUDINARY_SECRET`
+6. После старта проверьте `https://dipom-production.up.railway.app/api/health`.
+
+### База данных
+
+1. Создайте базу `wanderlog`.
+2. Импортируйте `backend/database/schema.sql`.
+3. Проверьте, что Railway env указывает именно на эту БД.
+
+### Проверка после деплоя
+
+1. Откройте `https://dipom.vercel.app`.
+2. Проверьте главную страницу и загрузку списка путешествий.
+3. Проверьте регистрацию и логин.
+4. Проверьте создание поездки.
+5. Проверьте загрузку аватара и фото — для этого нужен Cloudinary.
+
+### Что ещё важно
+
+- Frontend на Vercel — это статический сайт.
+- Backend на Railway — отдельный API.
+- Сброс пароля по email работает только при настроенном SMTP.
+- Загрузка фото и аватаров работает только при настроенном Cloudinary.
+- В production логи идут в консоль Railway, а не в локальные файлы.
+
 ## 🚀 Быстрый старт
 
 ### Вариант 1 — Docker (рекомендуется)
@@ -131,9 +180,17 @@ mysql -u root -p < backend/database/schema.sql
 
 # 2. Backend
 cd backend
-cp .env.example .env    # заполнить переменные
+cp .env.example .env
+# для локальной разработки можно поставить:
+# NODE_ENV=development
+# FRONTEND_URL=http://localhost:3000
+# DB_HOST=localhost
+# DB_PORT=3306
+# DB_USER=root
+# DB_PASS=your_password
+# DB_NAME=wanderlog
 npm install
-npm run dev             # nodemon, порт 5000
+npm run dev
 
 # 3. Frontend
 # Открыть frontend/index.html в браузере
@@ -344,8 +401,8 @@ cd backend && npm run dev
 # Проверка API
 curl http://localhost:5000/api/health
 
-# Логи
-tail -f backend/logs/app.log
+# В production на Railway логи смотреть в панели Railway
+# Локально логи пишутся в backend/logs/
 ```
 
 ---
