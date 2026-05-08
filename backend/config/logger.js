@@ -1,6 +1,30 @@
 const { createLogger, format, transports } = require('winston');
 const path = require('path');
 
+const logTransports = [
+  new transports.Console({
+    format: format.combine(
+      format.colorize(),
+      format.printf(({ timestamp, level, message, ...meta }) => {
+        const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
+        return `[${timestamp}] ${level}: ${message} ${metaStr}`;
+      })
+    ),
+  }),
+];
+
+if (process.env.NODE_ENV !== 'production') {
+  logTransports.push(
+    new transports.File({
+      filename: path.join(__dirname, '../logs/error.log'),
+      level: 'error',
+    }),
+    new transports.File({
+      filename: path.join(__dirname, '../logs/app.log'),
+    })
+  );
+}
+
 const logger = createLogger({
   level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
   format: format.combine(
@@ -8,24 +32,7 @@ const logger = createLogger({
     format.errors({ stack: true }),
     format.json()
   ),
-  transports: [
-    new transports.Console({
-      format: format.combine(
-        format.colorize(),
-        format.printf(({ timestamp, level, message, ...meta }) => {
-          const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
-          return `[${timestamp}] ${level}: ${message} ${metaStr}`;
-        })
-      ),
-    }),
-    new transports.File({
-      filename: path.join(__dirname, '../logs/error.log'),
-      level: 'error',
-    }),
-    new transports.File({
-      filename: path.join(__dirname, '../logs/app.log'),
-    }),
-  ],
+  transports: logTransports,
 });
 
 module.exports = logger;
