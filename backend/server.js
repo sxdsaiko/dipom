@@ -23,24 +23,20 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 app.use(helmet({ crossOriginEmbedderPolicy: false }));
 
+const allowedOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 const corsOptions = {
   origin: (origin, callback) => {
-    // В dev-режиме разрешаем всё: file://, любой localhost-порт, Live Server
     if (!origin || process.env.NODE_ENV !== 'production') return callback(null, true);
-    const allowed = (process.env.FRONTEND_URL || '')
-      .split(',')
-      .map(s => s.trim())
-      .concat([
-        'http://localhost:3000',
-        'http://localhost:5500',
-        'http://127.0.0.1:5500',
-        'http://127.0.0.1:3000',
-    
-        'https://dipom.vercel.app',
-        'https://dipom-9zkwjx7v6-sxdsaikos-projects.vercel.app',
-      ]);
+    const allowed = allowedOrigins.concat([
+      'http://localhost:3000', 'http://localhost:5500',
+      'http://127.0.0.1:5500', 'http://127.0.0.1:3000',
+    ]);
     if (allowed.includes(origin)) return callback(null, true);
-    callback(new Error('Not allowed by CORS'));
+    callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
   methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
@@ -136,5 +132,6 @@ cron.schedule('0 3 * * *', async () => {
   app.listen(PORT, () => {
     logger.info(`🚀  WanderLog API running on port ${PORT}`);
     logger.info(`   ENV: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`   FRONTEND_URL: ${allowedOrigins.join(', ') || 'not set'}`);
   });
 })();
