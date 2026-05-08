@@ -9,12 +9,24 @@ const fs    = require('fs');
 const path  = require('path');
 
 function buildConfig() {
+  if (process.env.DATABASE_URL) {
+    const u = new URL(process.env.DATABASE_URL);
+    return {
+      host:     u.hostname,
+      port:     parseInt(u.port) || 3306,
+      user:     decodeURIComponent(u.username),
+      password: decodeURIComponent(u.password),
+      database: u.pathname.replace(/^\//, ''),
+      ssl:      { rejectUnauthorized: false },
+      multipleStatements: true,
+    };
+  }
   return {
-    host: process.env.MYSQLHOST,
-    port: process.env.MYSQLPORT,
-    user: process.env.MYSQLUSER,
-    password: process.env.MYSQLPASSWORD,
-    database: process.env.MYSQLDATABASE,
+    host:     process.env.DB_HOST     || 'localhost',
+    port:     parseInt(process.env.DB_PORT) || 3306,
+    database: process.env.DB_NAME     || 'wanderlog',
+    user:     process.env.DB_USER     || 'root',
+    password: process.env.DB_PASSWORD || '',
     multipleStatements: true,
   };
 }
