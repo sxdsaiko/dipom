@@ -32,7 +32,7 @@ function buildConfig() {
 }
 
 async function main() {
-  const schemaPath = path.resolve(__dirname, "../schema.sql");
+  const schemaPath = path.resolve(__dirname, "schema.sql");
 
   console.log("📂 Looking for schema at:", schemaPath);
 
