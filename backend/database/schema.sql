@@ -1,15 +1,5 @@
--- ============================================================
--- WanderLog — Travel Diary Application
--- Database Schema v1.0
--- PostgreSQL-compatible (also works with MySQL 8.0+)
--- ============================================================
 
-CREATE DATABASE IF NOT EXISTS wanderlog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE wanderlog;
-
--- ─────────────────────────────────────────────
--- USERS & AUTH
--- ─────────────────────────────────────────────
+SET NAMES utf8mb4;
 
 CREATE TABLE users (
   id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
