@@ -1,12 +1,20 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+const url = process.env.MYSQL_URL || process.env.DATABASE_URL;
+
+const poolConfig = url
+  ? { uri: url }
+  : {
+      host:     process.env.DB_HOST || process.env.MYSQLHOST     || 'localhost',
+      port:     parseInt(process.env.DB_PORT || process.env.MYSQLPORT) || 3306,
+      user:     process.env.DB_USER || process.env.MYSQLUSER     || 'root',
+      password: process.env.DB_PASS || process.env.MYSQLPASSWORD || '',
+      database: process.env.DB_NAME || process.env.MYSQLDATABASE || 'wanderlog',
+    };
+
 const pool = mysql.createPool({
-  host:              process.env.DB_HOST     || 'localhost',
-  port:              parseInt(process.env.DB_PORT) || 3306,
-  user:              process.env.DB_USER     || 'root',
-  password:          process.env.DB_PASS     || '',
-  database:          process.env.DB_NAME     || 'wanderlog',
+  ...poolConfig,
   waitForConnections: true,
   connectionLimit:   20,
   queueLimit:        0,
@@ -18,10 +26,19 @@ const pool = mysql.createPool({
 async function testConnection() {
   try {
     const conn = await pool.getConnection();
-    console.log('✅  MySQL connected:', process.env.DB_NAME);
+    const [[row]] = await conn.query('SELECT DATABASE() AS db');
+    console.log('✅  MySQL connected:', row.db);
     conn.release();
   } catch (err) {
-    console.error('❌  MySQL connection error:', err.message);
+    console.error('❌  MySQL connection error:',
+      err.code || '(no code)',
+      err.errno || '',
+      err.message || '(no message)',
+      '\nhost:', poolConfig.host || '(uri)',
+      'port:', poolConfig.port || '(uri)',
+      'user:', poolConfig.user || '(uri)',
+      'db:',   poolConfig.database || '(uri)'
+    );
     process.exit(1);
   }
 }
