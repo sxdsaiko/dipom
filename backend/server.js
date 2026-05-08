@@ -25,18 +25,25 @@ app.use(helmet({ crossOriginEmbedderPolicy: false }));
 
 const allowedOrigins = (process.env.FRONTEND_URL || '')
   .split(',')
-  .map(s => s.trim())
+  .map(s => s.trim().replace(/\/$/, ''))
   .filter(Boolean);
+
+const staticAllowed = [
+  'http://localhost:3000', 'http://localhost:5500',
+  'http://127.0.0.1:5500', 'http://127.0.0.1:3000',
+];
+
+console.log('CORS allowed origins:', [...allowedOrigins, ...staticAllowed]);
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || process.env.NODE_ENV !== 'production') return callback(null, true);
-    const allowed = allowedOrigins.concat([
-      'http://localhost:3000', 'http://localhost:5500',
-      'http://127.0.0.1:5500', 'http://127.0.0.1:3000',
-    ]);
-    if (allowed.includes(origin)) return callback(null, true);
-    callback(new Error(`Not allowed by CORS: ${origin}`));
+    if (!origin) return callback(null, true);
+    const normalized = origin.replace(/\/$/, '');
+    const allowed = [...allowedOrigins, ...staticAllowed];
+    const ok = allowed.includes(normalized) || /\.vercel\.app$/.test(new URL(normalized).hostname);
+    if (ok) return callback(null, true);
+    console.warn('CORS blocked origin:', origin, '— allowed:', allowed);
+    return callback(null, false); // no error → just no CORS header
   },
   credentials: true,
   methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
