@@ -60,13 +60,17 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Stricter limit for auth (только в production)
+// Stricter limit only for login/register (brute-force surface).
+// /auth/me, /auth/refresh etc. use the global limiter.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 15 : 1000,
+  max: process.env.NODE_ENV === 'production' ? 20 : 1000,
   message: { error: 'Превышен лимит попыток авторизации' },
 });
-app.use('/api/auth/', authLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 
 // ── Middleware ────────────────────────────────────────────
 app.use(compression());
